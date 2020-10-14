@@ -102,7 +102,7 @@ vendor:
 
 multiarch-build-push: ## Build and push a multi-arch Contour container image to the Docker registry
 	docker buildx build \
-		--file Dockerfile-multiarch \
+		--file Dockerfile \
 		--platform $(IMAGE_PLATFORMS) \
 		--build-arg "BUILD_VERSION=$(BUILD_VERSION)" \
 		--build-arg "BUILD_BRANCH=$(BUILD_BRANCH)" \
