@@ -23,5 +23,5 @@ jobs:
         DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
         TAG_LATEST: "false"
       run: |
-        ./hack/build-and-push-release-images.sh
+        ./hack/actions/build-and-push-release-images.sh
         docker logout
