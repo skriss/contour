@@ -26,7 +26,7 @@ if [[ -z "$CURRENT_TAG" ]]; then
 fi
 
 # Fetch all tags so we can check if the current tag
-# is the highest semver.
+# is the highest semver
 git fetch --tags
 
 HIGHEST_SEMVER_TAG=""
