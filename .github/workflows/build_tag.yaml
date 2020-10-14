@@ -26,6 +26,7 @@ jobs:
         DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
         DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
         TAG_LATEST: "false"
+        REGISTRY: steveheptio
       run: |
         echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
         ./hack/actions/build-and-push-release-images.sh
