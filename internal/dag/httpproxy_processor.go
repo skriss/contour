@@ -301,6 +301,8 @@ func (p *HTTPProxyProcessor) computeHTTPProxy(proxy *contour_api_v1.HTTPProxy) {
 	insecure.CORSPolicy = cp
 	addRoutes(insecure, routes)
 
+	insecure.RateLimitDescriptors = rateLimitDescriptors(proxy.Spec.VirtualHost.RateLimitDescriptors)
+
 	// if TLS is enabled for this virtual host and there is no tcp proxy defined,
 	// then add routes to the secure virtualhost definition.
 	if tlsEnabled && proxy.Spec.TCPProxy == nil {
@@ -308,6 +310,31 @@ func (p *HTTPProxyProcessor) computeHTTPProxy(proxy *contour_api_v1.HTTPProxy) {
 		secure.CORSPolicy = cp
 		addRoutes(secure, routes)
 	}
+}
+
+func rateLimitDescriptors(descriptors []contour_api_v1.RateLimitDescriptor) []RateLimitDescriptor {
+	var res []RateLimitDescriptor
+	for _, d := range descriptors {
+		var rld RateLimitDescriptor
+
+		for _, item := range d.Items {
+			switch {
+			case item.GenericKey != nil:
+				rld.Items = append(rld.Items, RateLimitDescriptorItem{
+					GenericKeyValue: item.GenericKey.Value,
+				})
+			case item.RequestHeader != nil:
+				rld.Items = append(rld.Items, RateLimitDescriptorItem{
+					HeaderMatchHeaderName:    item.RequestHeader.HeaderName,
+					HeaderMatchDescriptorKey: item.RequestHeader.DescriptorKey,
+				})
+			}
+		}
+
+		res = append(res, rld)
+	}
+
+	return res
 }
 
 type vhost interface {
@@ -439,6 +466,7 @@ func (p *HTTPProxyProcessor) computeRoutes(
 			RetryPolicy:           retryPolicy(route.RetryPolicy),
 			RequestHeadersPolicy:  reqHP,
 			ResponseHeadersPolicy: respHP,
+			RateLimitDescriptors:  rateLimitDescriptors(route.RateLimitDescriptors),
 		}
 
 		// If the enclosing root proxy enabled authorization,

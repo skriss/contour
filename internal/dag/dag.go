@@ -199,6 +199,8 @@ type Route struct {
 
 	// ResponseHeadersPolicy defines how headers are managed during forwarding
 	ResponseHeadersPolicy *HeadersPolicy
+
+	RateLimitDescriptors []RateLimitDescriptor
 }
 
 // HasPathPrefix returns whether this route has a PrefixPathCondition.
@@ -326,7 +328,20 @@ type VirtualHost struct {
 	// CORSPolicy is the cross-origin policy to apply to the VirtualHost.
 	CORSPolicy *CORSPolicy
 
+	RateLimitDescriptors []RateLimitDescriptor
+
 	routes map[string]*Route
+}
+
+type RateLimitDescriptor struct {
+	Items []RateLimitDescriptorItem
+}
+
+type RateLimitDescriptorItem struct {
+	GenericKeyValue string
+
+	HeaderMatchHeaderName    string
+	HeaderMatchDescriptorKey string
 }
 
 func (v *VirtualHost) addRoute(route *Route) {

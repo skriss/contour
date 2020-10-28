@@ -162,6 +162,8 @@ func (v *routeVisitor) onVirtualHost(vh *dag.VirtualHost) {
 			evh = envoy_v3.VirtualHost(vh.Name, routes...)
 		}
 
+		evh.RateLimits = envoy_v3.RateLimits(vh.RateLimitDescriptors)
+
 		v.routes[ENVOY_HTTP_LISTENER].VirtualHosts = append(v.routes[ENVOY_HTTP_LISTENER].VirtualHosts, evh)
 	}
 }

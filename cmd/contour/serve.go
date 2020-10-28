@@ -278,6 +278,15 @@ func doServe(log logrus.FieldLogger, ctx *serveContext) error {
 		DefaultHTTPVersions:           parseDefaultHTTPVersions(ctx.Config.DefaultHTTPVersions),
 	}
 
+	if ctx.Config.RateLimitService.ExtensionService != "" {
+		timeout, _ := timeout.Parse(ctx.Config.RateLimitService.Timeout)
+
+		listenerConfig.RateLimitExtensionService = k8s.NamespacedNameFrom(ctx.Config.RateLimitService.ExtensionService)
+		listenerConfig.RateLimitDomain = ctx.Config.RateLimitService.Domain
+		listenerConfig.RateLimitTimeout = timeout
+		listenerConfig.RateLimitDenyOnFailure = ctx.Config.RateLimitService.DenyOnFailure
+	}
+
 	contourMetrics := metrics.NewMetrics(registry)
 
 	// Endpoints updates are handled directly by the EndpointsTranslator

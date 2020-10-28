@@ -1,0 +1,25 @@
+domain: steve
+descriptors:
+- key: generic_key
+  value: foo
+  rate_limit:
+    unit: minute
+    requests_per_unit: 0
+- key: steve-ratelimit
+  value: foo
+  descriptors:
+    - key: generic_key
+      value: s1
+      rate_limit:
+        unit: minute
+        requests_per_unit: 0
+- key: generic_key
+  value: s1
+  rate_limit:
+    unit: minute
+    requests_per_unit: 3
+- key: generic_key
+  value: s2
+  rate_limit:
+    unit: minute
+    requests_per_unit: 1

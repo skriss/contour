@@ -1,0 +1,10 @@
+apiVersion: projectcontour.io/v1alpha1
+kind: ExtensionService
+metadata:
+  namespace: projectcontour
+  name: ratelimit
+spec:
+  protocol: h2c
+  services:
+    - name: ratelimit
+      port: 8081

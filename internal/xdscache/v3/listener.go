@@ -16,13 +16,18 @@ package v3
 import (
 	"path"
 	"sort"
+	"strings"
 	"sync"
 
 	envoy_accesslog_v3 "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
+	envoy_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	ratelimit_config_v3 "github.com/envoyproxy/go-control-plane/envoy/config/ratelimit/v3"
+	ratelimit_filter_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ratelimit/v3"
 	http "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_tls_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/proto"
 	"github.com/projectcontour/contour/internal/contour"
 	"github.com/projectcontour/contour/internal/dag"
@@ -31,6 +36,7 @@ import (
 	"github.com/projectcontour/contour/internal/sorter"
 	"github.com/projectcontour/contour/internal/timeout"
 	"github.com/projectcontour/contour/pkg/config"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 // nolint:golint
@@ -113,6 +119,14 @@ type ListenerConfig struct {
 
 	// ConnectionShutdownGracePeriod configures the drain_timeout for all Connection Managers.
 	ConnectionShutdownGracePeriod timeout.Setting
+
+	RateLimitExtensionService types.NamespacedName
+
+	RateLimitDomain string
+
+	RateLimitTimeout timeout.Setting
+
+	RateLimitDenyOnFailure bool
 }
 
 // httpAddress returns the port for the HTTP (non TLS)
@@ -316,7 +330,7 @@ func visitListeners(root dag.Vertex, lvc *ListenerConfig) map[string]*envoy_list
 
 	if lv.http {
 		// Add a listener if there are vhosts bound to http.
-		cm := envoy_v3.HTTPConnectionManagerBuilder().
+		builder := envoy_v3.HTTPConnectionManagerBuilder().
 			Codec(envoy_v3.CodecForVersions(lv.DefaultHTTPVersions...)).
 			DefaultFilters().
 			RouteConfigName(ENVOY_HTTP_LISTENER).
@@ -326,8 +340,31 @@ func visitListeners(root dag.Vertex, lvc *ListenerConfig) map[string]*envoy_list
 			ConnectionIdleTimeout(lvc.ConnectionIdleTimeout).
 			StreamIdleTimeout(lvc.StreamIdleTimeout).
 			MaxConnectionDuration(lvc.MaxConnectionDuration).
-			ConnectionShutdownGracePeriod(lvc.ConnectionShutdownGracePeriod).
-			Get()
+			ConnectionShutdownGracePeriod(lvc.ConnectionShutdownGracePeriod)
+
+		if lv.RateLimitExtensionService.Name != "" {
+			builder.AddFilter(&http.HttpFilter{
+				Name: wellknown.HTTPRateLimit,
+				ConfigType: &http.HttpFilter_TypedConfig{
+					TypedConfig: protobuf.MustMarshalAny(&ratelimit_filter_v3.RateLimit{
+						Domain:          lv.RateLimitDomain,
+						Timeout:         protobuf.Duration(lv.RateLimitTimeout.Duration()), // TODO handle default, infinite
+						FailureModeDeny: lv.RateLimitDenyOnFailure,
+						RateLimitService: &ratelimit_config_v3.RateLimitServiceConfig{
+							GrpcService: &envoy_core_v3.GrpcService{
+								TargetSpecifier: &envoy_core_v3.GrpcService_EnvoyGrpc_{
+									EnvoyGrpc: &envoy_core_v3.GrpcService_EnvoyGrpc{
+										ClusterName: strings.Join([]string{"extension", lv.RateLimitExtensionService.String()}, "/"),
+									},
+								},
+							},
+						},
+					}),
+				},
+			})
+		}
+
+		cm := builder.Get()
 
 		lv.listeners[ENVOY_HTTP_LISTENER] = envoy_v3.Listener(
 			ENVOY_HTTP_LISTENER,

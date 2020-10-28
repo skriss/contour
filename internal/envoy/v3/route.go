@@ -91,6 +91,7 @@ func RouteRoute(r *dag.Route) *envoy_route_v3.Route_Route {
 		PrefixRewrite:         r.PrefixRewrite,
 		HashPolicy:            hashPolicy(r),
 		RequestMirrorPolicies: mirrorPolicy(r),
+		RateLimits:            RateLimits(r.RateLimitDescriptors),
 	}
 
 	// Check for host header policy and set if found
@@ -150,6 +151,39 @@ func mirrorPolicy(r *dag.Route) []*envoy_route_v3.RouteAction_RequestMirrorPolic
 	return []*envoy_route_v3.RouteAction_RequestMirrorPolicy{{
 		Cluster: envoy.Clustername(r.MirrorPolicy.Cluster),
 	}}
+}
+
+func RateLimits(descriptors []dag.RateLimitDescriptor) []*envoy_route_v3.RateLimit {
+	var rateLimits []*envoy_route_v3.RateLimit
+	for _, descriptor := range descriptors {
+		var rl envoy_route_v3.RateLimit
+
+		for _, item := range descriptor.Items {
+			switch {
+			case item.GenericKeyValue != "":
+				rl.Actions = append(rl.Actions, &envoy_route_v3.RateLimit_Action{
+					ActionSpecifier: &envoy_route_v3.RateLimit_Action_GenericKey_{
+						GenericKey: &envoy_route_v3.RateLimit_Action_GenericKey{
+							DescriptorValue: item.GenericKeyValue,
+						},
+					},
+				})
+			case item.HeaderMatchHeaderName != "":
+				rl.Actions = append(rl.Actions, &envoy_route_v3.RateLimit_Action{
+					ActionSpecifier: &envoy_route_v3.RateLimit_Action_RequestHeaders_{
+						RequestHeaders: &envoy_route_v3.RateLimit_Action_RequestHeaders{
+							HeaderName:    item.HeaderMatchHeaderName,
+							DescriptorKey: item.HeaderMatchDescriptorKey,
+						},
+					},
+				})
+			}
+		}
+
+		rateLimits = append(rateLimits, &rl)
+	}
+
+	return rateLimits
 }
 
 func retryPolicy(r *dag.Route) *envoy_route_v3.RetryPolicy {

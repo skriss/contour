@@ -401,6 +401,18 @@ type Parameters struct {
 	// Cluster holds various configurable Envoy cluster values that can
 	// be set in the config file.
 	Cluster ClusterParameters `yaml:"cluster,omitempty"`
+
+	RateLimitService RateLimitService `yaml:"rateLimitService,omitempty"`
+}
+
+type RateLimitService struct {
+	ExtensionService string `yaml:"extensionService,omitempty"`
+
+	Domain string `yaml:"domain,omitempty"`
+
+	Timeout string `yaml:"timeout,omitempty"`
+
+	DenyOnFailure bool `yaml:"denyOnFailure,omitempty"`
 }
 
 // Validate verifies that the parameter values do not have any syntax errors.

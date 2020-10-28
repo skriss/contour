@@ -210,6 +210,30 @@ type VirtualHost struct {
 	// Specifies the cross-origin policy to apply to the VirtualHost.
 	// +optional
 	CORSPolicy *CORSPolicy `json:"corsPolicy,omitempty"`
+
+	// RateLimitDescriptors ... TODO
+	// +optional
+	RateLimitDescriptors []RateLimitDescriptor `json:"rateLimitDescriptors,omitempty"`
+}
+
+type RateLimitDescriptor struct {
+	Items []RateLimitDescriptorItem `json:"items,omitempty"`
+}
+
+type RateLimitDescriptorItem struct {
+	GenericKey *GenericKeyDescriptor `json:"genericKey,omitempty"`
+
+	RequestHeader *RequestHeaderDescriptor `json:"requestHeader,omitempty"`
+}
+
+type GenericKeyDescriptor struct {
+	Value string `json:"value,omitempty"`
+}
+
+type RequestHeaderDescriptor struct {
+	HeaderName string `json:"headerName,omitempty"`
+
+	DescriptorKey string `json:"descriptorKey,omitempty"`
 }
 
 // TLS describes tls properties. The SNI names that will be matched on
@@ -324,6 +348,9 @@ type Route struct {
 	// Rewriting the 'Host' header is not supported.
 	// +optional
 	ResponseHeadersPolicy *HeadersPolicy `json:"responseHeadersPolicy,omitempty"`
+	// RateLimitDescriptors ... TODO
+	// +optional
+	RateLimitDescriptors []RateLimitDescriptor `json:"rateLimitDescriptors,omitempty"`
 }
 
 // TCPProxy contains the set of services to proxy TCP connections.

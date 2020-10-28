@@ -453,6 +453,29 @@ spec:
                     permitInsecure:
                       description: Allow this path to respond to insecure requests over HTTP which are normally not permitted when a `virtualhost.tls` block is present.
                       type: boolean
+                    rateLimitDescriptors:
+                      description: RateLimitDescriptors ... TODO
+                      items:
+                        properties:
+                          items:
+                            items:
+                              properties:
+                                genericKey:
+                                  properties:
+                                    value:
+                                      type: string
+                                  type: object
+                                requestHeader:
+                                  properties:
+                                    descriptorKey:
+                                      type: string
+                                    headerName:
+                                      type: string
+                                  type: object
+                              type: object
+                            type: array
+                        type: object
+                      type: array
                     requestHeadersPolicy:
                       description: The policy for managing request headers during proxying.
                       properties:
@@ -906,6 +929,29 @@ spec:
                   fqdn:
                     description: The fully qualified domain name of the root of the ingress tree all leaves of the DAG rooted at this object relate to the fqdn.
                     type: string
+                  rateLimitDescriptors:
+                    description: RateLimitDescriptors ... TODO
+                    items:
+                      properties:
+                        items:
+                          items:
+                            properties:
+                              genericKey:
+                                properties:
+                                  value:
+                                    type: string
+                                type: object
+                              requestHeader:
+                                properties:
+                                  descriptorKey:
+                                    type: string
+                                  headerName:
+                                    type: string
+                                type: object
+                            type: object
+                          type: array
+                      type: object
+                    type: array
                   tls:
                     description: If present the fields describes TLS properties of the virtual host. The SNI names that will be matched on are described in fqdn, the tls.secretName secret must contain a certificate that itself contains a name that matches the FQDN.
                     properties:
