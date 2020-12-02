@@ -211,8 +211,21 @@ type VirtualHost struct {
 	// +optional
 	CORSPolicy *CORSPolicy `json:"corsPolicy,omitempty"`
 
-	// RateLimitDescriptors ... TODO
+	// RateLimitPolicy .... TODO
 	// +optional
+	RateLimitPolicy *RateLimitPolicy `json:"rateLimitPolicy,omitempty"`
+}
+
+type RateLimitPolicy struct {
+	Local  *LocalRateLimitPolicy  `json:"local,omitempty"`
+	Global *GlobalRateLimitPolicy `json:"global,omitempty"`
+}
+
+type LocalRateLimitPolicy struct {
+}
+
+type GlobalRateLimitPolicy struct {
+	// RateLimitDescriptors ... TODO
 	RateLimitDescriptors []RateLimitDescriptor `json:"rateLimitDescriptors,omitempty"`
 }
 
@@ -348,9 +361,10 @@ type Route struct {
 	// Rewriting the 'Host' header is not supported.
 	// +optional
 	ResponseHeadersPolicy *HeadersPolicy `json:"responseHeadersPolicy,omitempty"`
-	// RateLimitDescriptors ... TODO
+
+	// RateLimitPolicy ... TODO
 	// +optional
-	RateLimitDescriptors []RateLimitDescriptor `json:"rateLimitDescriptors,omitempty"`
+	RateLimitPolicy *RateLimitPolicy `json:"rateLimitPolicy,omitempty"`
 }
 
 // TCPProxy contains the set of services to proxy TCP connections.

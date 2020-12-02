@@ -301,7 +301,9 @@ func (p *HTTPProxyProcessor) computeHTTPProxy(proxy *contour_api_v1.HTTPProxy) {
 	insecure.CORSPolicy = cp
 	addRoutes(insecure, routes)
 
-	insecure.RateLimitDescriptors = rateLimitDescriptors(proxy.Spec.VirtualHost.RateLimitDescriptors)
+	if rlp := proxy.Spec.VirtualHost.RateLimitPolicy; rlp != nil && rlp.Global != nil {
+		insecure.RateLimitDescriptors = rateLimitDescriptors(rlp.Global.RateLimitDescriptors)
+	}
 
 	// if TLS is enabled for this virtual host and there is no tcp proxy defined,
 	// then add routes to the secure virtualhost definition.
@@ -457,6 +459,11 @@ func (p *HTTPProxyProcessor) computeRoutes(
 			return nil
 		}
 
+		var rld []contour_api_v1.RateLimitDescriptor
+		if rlp := route.RateLimitPolicy; rlp != nil && rlp.Global != nil {
+			rld = rlp.Global.RateLimitDescriptors
+		}
+
 		r := &Route{
 			PathMatchCondition:    mergePathMatchConditions(conds),
 			HeaderMatchConditions: mergeHeaderMatchConditions(conds),
@@ -466,7 +473,7 @@ func (p *HTTPProxyProcessor) computeRoutes(
 			RetryPolicy:           retryPolicy(route.RetryPolicy),
 			RequestHeadersPolicy:  reqHP,
 			ResponseHeadersPolicy: respHP,
-			RateLimitDescriptors:  rateLimitDescriptors(route.RateLimitDescriptors),
+			RateLimitDescriptors:  rateLimitDescriptors(rld),
 		}
 
 		// If the enclosing root proxy enabled authorization,
