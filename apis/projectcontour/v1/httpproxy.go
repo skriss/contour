@@ -225,7 +225,9 @@ type LocalRateLimitPolicy struct {
 }
 
 type GlobalRateLimitPolicy struct {
-	// RateLimitDescriptors ... TODO
+	// RateLimitDescriptors defines the list of descriptors that will
+	// be generated and sent to the rate limit service. Each descriptor
+	// contains 1+ key-value pairs.
 	RateLimitDescriptors []RateLimitDescriptor `json:"rateLimitDescriptors,omitempty"`
 }
 
