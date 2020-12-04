@@ -274,3 +274,32 @@ func prefixReplacementsAreValid(replacements []contour_api_v1.ReplacePrefix) (st
 
 	return "", nil
 }
+
+func rateLimitPolicy(in *contour_api_v1.RateLimitPolicy) *RateLimitPolicy {
+	if in == nil {
+		return nil
+	}
+	if in.Global == nil && in.Local == nil {
+		return nil
+	}
+
+	var rp RateLimitPolicy
+
+	if in.Local != nil {
+		rp.Local = &LocalRateLimitPolicy{
+			MaxTokens:          in.Local.TokenBucket.MaxTokens,
+			TokensPerFill:      in.Local.TokenBucket.TokensPerFill,
+			FillInterval:       in.Local.TokenBucket.FillInterval.Duration,
+			ResponseStatusCode: in.Local.ResponseStatusCode,
+		}
+
+		if len(in.Local.ResponseHeadersToAdd) > 0 {
+			rp.Local.ResponseHeadersToAdd = map[string]string{}
+			for _, header := range in.Local.ResponseHeadersToAdd {
+				rp.Local.ResponseHeadersToAdd[header.Name] = header.Value
+			}
+		}
+	}
+
+	return &rp
+}

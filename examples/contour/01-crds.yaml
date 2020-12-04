@@ -461,6 +461,50 @@ spec:
                           type: object
                         local:
                           description: LocalRateLimitPolicy defines local rate limiting parameters.
+                          properties:
+                            responseHeadersToAdd:
+                              description: ResponseHeadersToAdd is an optional list of response headers to set when a request is rate-limited.
+                              items:
+                                description: HeaderValue represents a header name/value pair
+                                properties:
+                                  name:
+                                    description: Name represents a key of a header
+                                    minLength: 1
+                                    type: string
+                                  value:
+                                    description: Value represents the value of a header specified by a key
+                                    minLength: 1
+                                    type: string
+                                required:
+                                - name
+                                - value
+                                type: object
+                              type: array
+                            responseStatusCode:
+                              description: ResponseStatusCode is the HTTP status code to use for responses to rate-limited requests. If not specified, the Envoy default of 429 (Too Many Requests) is used. TODO validation
+                              format: int32
+                              type: integer
+                            tokenBucket:
+                              description: TokenBucket defines the properties of a token bucket to be used for local rate limiting.
+                              properties:
+                                fillInterval:
+                                  description: FillInterval is how often to add tokens back to the bucket. TODO validate >= 50ms
+                                  type: string
+                                maxTokens:
+                                  description: MaxTokens is the maximum number of tokens the bucket can contain at once.
+                                  format: int32
+                                  type: integer
+                                tokensPerFill:
+                                  description: TokensPerFill is how many tokens to add to the bucket each time it's filled.
+                                  format: int32
+                                  type: integer
+                              required:
+                              - fillInterval
+                              - maxTokens
+                              - tokensPerFill
+                              type: object
+                          required:
+                          - tokenBucket
                           type: object
                       type: object
                     requestHeadersPolicy:
@@ -916,6 +960,60 @@ spec:
                   fqdn:
                     description: The fully qualified domain name of the root of the ingress tree all leaves of the DAG rooted at this object relate to the fqdn.
                     type: string
+                  rateLimitPolicy:
+                    description: The policy for rate limiting on the virtual host.
+                    properties:
+                      global:
+                        description: GlobalRateLimitPolicy defines global rate limiting parameters.
+                        type: object
+                      local:
+                        description: LocalRateLimitPolicy defines local rate limiting parameters.
+                        properties:
+                          responseHeadersToAdd:
+                            description: ResponseHeadersToAdd is an optional list of response headers to set when a request is rate-limited.
+                            items:
+                              description: HeaderValue represents a header name/value pair
+                              properties:
+                                name:
+                                  description: Name represents a key of a header
+                                  minLength: 1
+                                  type: string
+                                value:
+                                  description: Value represents the value of a header specified by a key
+                                  minLength: 1
+                                  type: string
+                              required:
+                              - name
+                              - value
+                              type: object
+                            type: array
+                          responseStatusCode:
+                            description: ResponseStatusCode is the HTTP status code to use for responses to rate-limited requests. If not specified, the Envoy default of 429 (Too Many Requests) is used. TODO validation
+                            format: int32
+                            type: integer
+                          tokenBucket:
+                            description: TokenBucket defines the properties of a token bucket to be used for local rate limiting.
+                            properties:
+                              fillInterval:
+                                description: FillInterval is how often to add tokens back to the bucket. TODO validate >= 50ms
+                                type: string
+                              maxTokens:
+                                description: MaxTokens is the maximum number of tokens the bucket can contain at once.
+                                format: int32
+                                type: integer
+                              tokensPerFill:
+                                description: TokensPerFill is how many tokens to add to the bucket each time it's filled.
+                                format: int32
+                                type: integer
+                            required:
+                            - fillInterval
+                            - maxTokens
+                            - tokensPerFill
+                            type: object
+                        required:
+                        - tokenBucket
+                        type: object
+                    type: object
                   tls:
                     description: If present the fields describes TLS properties of the virtual host. The SNI names that will be matched on are described in fqdn, the tls.secretName secret must contain a certificate that itself contains a name that matches the FQDN.
                     properties:

@@ -210,6 +210,9 @@ type VirtualHost struct {
 	// Specifies the cross-origin policy to apply to the VirtualHost.
 	// +optional
 	CORSPolicy *CORSPolicy `json:"corsPolicy,omitempty"`
+	// The policy for rate limiting on the virtual host.
+	// +optional
+	RateLimitPolicy *RateLimitPolicy `json:"rateLimitPolicy,omitempty"`
 }
 
 // TLS describes tls properties. The SNI names that will be matched on
@@ -337,6 +340,38 @@ type RateLimitPolicy struct {
 
 // LocalRateLimitPolicy defines local rate limiting parameters.
 type LocalRateLimitPolicy struct {
+	// TokenBucket defines the properties of a token bucket to be
+	// used for local rate limiting.
+	TokenBucket TokenBucket `json:"tokenBucket"`
+
+	// ResponseStatusCode is the HTTP status code to use for responses
+	// to rate-limited requests. If not specified, the Envoy default of
+	// 429 (Too Many Requests) is used.
+	// TODO validation
+	// +optional
+	ResponseStatusCode int32 `json:"responseStatusCode,omitempty"`
+
+	// ResponseHeadersToAdd is an optional list of response headers to
+	// set when a request is rate-limited.
+	// +optional
+	ResponseHeadersToAdd []HeaderValue `json:"responseHeadersToAdd,omitempty"`
+}
+
+// TokenBucket defines the properties of a token bucket to be
+// used for local rate limiting.
+type TokenBucket struct {
+	// MaxTokens is the maximum number of tokens the bucket
+	// can contain at once.
+	MaxTokens uint32 `json:"maxTokens"`
+
+	// TokensPerFill is how many tokens to add to the bucket
+	// each time it's filled.
+	TokensPerFill uint32 `json:"tokensPerFill"`
+
+	// FillInterval is how often to add tokens back to the
+	// bucket.
+	// TODO validate >= 50ms
+	FillInterval metav1.Duration `json:"fillInterval"`
 }
 
 // GlobalRateLimitPolicy defines global rate limiting parameters.
