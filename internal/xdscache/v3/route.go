@@ -16,9 +16,14 @@ package v3
 import (
 	"path"
 	"sort"
+	"strings"
 	"sync"
+	"time"
 
+	envoy_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	ratelimit_config_v3 "github.com/envoyproxy/go-control-plane/envoy/config/ratelimit/v3"
 	envoy_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	ratelimit_filter_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ratelimit/v3"
 	resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
@@ -160,6 +165,23 @@ func (v *routeVisitor) onVirtualHost(vh *dag.VirtualHost) {
 			evh = envoy_v3.CORSVirtualHost(vh.Name, cp, routes...)
 		} else {
 			evh = envoy_v3.VirtualHost(vh.Name, routes...)
+		}
+
+		evh.TypedPerFilterConfig = map[string]*any.Any{
+			"envoy.filters.http.ratelimit": protobuf.MustMarshalAny(&ratelimit_filter_v3.RateLimit{
+				Domain:          "contour",
+				Timeout:         protobuf.Duration(100 * time.Millisecond),
+				FailureModeDeny: true,
+				RateLimitService: &ratelimit_config_v3.RateLimitServiceConfig{
+					GrpcService: &envoy_core_v3.GrpcService{
+						TargetSpecifier: &envoy_core_v3.GrpcService_EnvoyGrpc_{
+							EnvoyGrpc: &envoy_core_v3.GrpcService_EnvoyGrpc{
+								ClusterName: strings.Join([]string{"extension", "projectcontour/ratelimit"}, "/"),
+							},
+						},
+					},
+				},
+			}),
 		}
 
 		evh.RateLimits = envoy_v3.RateLimits(vh.RateLimitDescriptors)
