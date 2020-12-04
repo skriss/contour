@@ -324,6 +324,23 @@ type Route struct {
 	// Rewriting the 'Host' header is not supported.
 	// +optional
 	ResponseHeadersPolicy *HeadersPolicy `json:"responseHeadersPolicy,omitempty"`
+	// The policy for rate limiting on the route.
+	// +optional
+	RateLimitPolicy *RateLimitPolicy `json:"rateLimitPolicy,omitempty"`
+}
+
+// RateLimitPolicy defines rate limiting parameters.
+type RateLimitPolicy struct {
+	Local  *LocalRateLimitPolicy  `json:"local,omitempty"`
+	Global *GlobalRateLimitPolicy `json:"global,omitempty"`
+}
+
+// LocalRateLimitPolicy defines local rate limiting parameters.
+type LocalRateLimitPolicy struct {
+}
+
+// GlobalRateLimitPolicy defines global rate limiting parameters.
+type GlobalRateLimitPolicy struct {
 }
 
 // TCPProxy contains the set of services to proxy TCP connections.

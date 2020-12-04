@@ -453,6 +453,16 @@ spec:
                     permitInsecure:
                       description: Allow this path to respond to insecure requests over HTTP which are normally not permitted when a `virtualhost.tls` block is present.
                       type: boolean
+                    rateLimitPolicy:
+                      description: The policy for rate limiting on the route.
+                      properties:
+                        global:
+                          description: GlobalRateLimitPolicy defines global rate limiting parameters.
+                          type: object
+                        local:
+                          description: LocalRateLimitPolicy defines local rate limiting parameters.
+                          type: object
+                      type: object
                     requestHeadersPolicy:
                       description: The policy for managing request headers during proxying.
                       properties:
