@@ -14,10 +14,6 @@
 
 import data.contour.resources
 
-skip[msg] {
-  msg := "004-https-sni-enforcement is flaky, skipping until it's fixed"
-}
-
 # Ensure that cert-manager is installed.
 # Version check the certificates resource.
 
@@ -59,6 +55,7 @@ spec:
   selfSigned: {}
 
 ---
+# Create an ingress-conformance-echo deployment
 
 apiVersion: apps/v1
 kind: Deployment
@@ -70,6 +67,9 @@ $apply:
 
 ---
 
+# Create a service for ingress-conformance-echo
+
+
 apiVersion: v1
 kind: Service
 metadata:
@@ -79,6 +79,8 @@ $apply:
     as: echo-one
 
 ---
+
+# Request a cert for echo-one, stored in echo-one
 
 apiVersion: cert-manager.io/v1
 kind: Certificate
@@ -92,6 +94,8 @@ spec:
     name: selfsigned
 
 ---
+
+# Set up a proxy for echo-one
 
 apiVersion: projectcontour.io/v1
 kind: HTTPProxy
@@ -109,6 +113,8 @@ spec:
 
 ---
 
+# ensure the echo-one proxy got set up
+
 import data.contour.resources
 
 fatal_proxy_is_not_present[msg] {
@@ -117,6 +123,8 @@ fatal_proxy_is_not_present[msg] {
 }
 
 ---
+
+# ensure the echo-one proxy got processed
 
 import data.contour.resources
 
@@ -132,6 +140,9 @@ fatal_proxy_is_not_valid[msg] {
 }
 
 ---
+
+## hang here
+# make a request, confirm we got a 200
 
 import data.contour.http.client
 import data.contour.http.client.url
@@ -170,6 +181,8 @@ error_wrong_routing[msg] {
 
 ---
 
+# set up echo-two ingress-conformance-echo deployment
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -180,6 +193,8 @@ $apply:
 
 ---
 
+# set up service for echo-two ingress-conformance-echo deployment
+
 apiVersion: v1
 kind: Service
 metadata:
@@ -189,6 +204,8 @@ $apply:
     as: echo-two
 
 ---
+
+# request a cert for echo-two, stored in the echo-two secret
 
 apiVersion: cert-manager.io/v1
 kind: Certificate
@@ -202,6 +219,8 @@ spec:
     name: selfsigned
 
 ---
+
+# create an echo-two proxy
 
 apiVersion: projectcontour.io/v1
 kind: HTTPProxy
@@ -219,6 +238,8 @@ spec:
 
 ---
 
+# ensure the proxy got created
+
 import data.contour.resources
 
 fatal_proxy_is_not_present[msg] {
@@ -227,6 +248,8 @@ fatal_proxy_is_not_present[msg] {
 }
 
 ---
+
+# ensure the proxy got processed
 
 import data.contour.resources
 
@@ -242,6 +265,8 @@ fatal_proxy_is_not_valid[msg] {
 }
 
 ---
+
+# make a request to echo-two
 
 import data.contour.http.client
 import data.contour.http.client.url
