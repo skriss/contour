@@ -236,111 +236,16 @@ func doServe(log logrus.FieldLogger, ctx *serveContext) error {
 		return err
 	}
 
-	// XXX(jpeach) we know the config file validated, so all
-	// the timeouts will parse. Shall we add a `timeout.MustParse()`
-	// and use it here?
-
-	connectionIdleTimeout, err := timeout.Parse(ctx.Config.Timeouts.ConnectionIdleTimeout)
-	if err != nil {
-		return fmt.Errorf("error parsing connection idle timeout: %w", err)
-	}
-	streamIdleTimeout, err := timeout.Parse(ctx.Config.Timeouts.StreamIdleTimeout)
-	if err != nil {
-		return fmt.Errorf("error parsing stream idle timeout: %w", err)
-	}
-	delayedCloseTimeout, err := timeout.Parse(ctx.Config.Timeouts.DelayedCloseTimeout)
-	if err != nil {
-		return fmt.Errorf("error parsing delayed close timeout: %w", err)
-	}
-	maxConnectionDuration, err := timeout.Parse(ctx.Config.Timeouts.MaxConnectionDuration)
-	if err != nil {
-		return fmt.Errorf("error parsing max connection duration: %w", err)
-	}
-	connectionShutdownGracePeriod, err := timeout.Parse(ctx.Config.Timeouts.ConnectionShutdownGracePeriod)
-	if err != nil {
-		return fmt.Errorf("error parsing connection shutdown grace period: %w", err)
-	}
-	requestTimeout, err := timeout.Parse(ctx.Config.Timeouts.RequestTimeout)
-	if err != nil {
-		return fmt.Errorf("error parsing request timeout: %w", err)
-	}
-
-	// connection balancer
-	if ok := ctx.Config.Listener.ConnectionBalancer == "exact" || ctx.Config.Listener.ConnectionBalancer == ""; !ok {
-		log.Warnf("Invalid listener connection balancer value %q. Only 'exact' connection balancing is supported for now.", ctx.Config.Listener.ConnectionBalancer)
-		ctx.Config.Listener.ConnectionBalancer = ""
-	}
-
-	listenerConfig := xdscache_v3.ListenerConfig{
-		UseProxyProto: ctx.useProxyProto,
-		HTTPListeners: map[string]xdscache_v3.Listener{
-			"ingress_http": {
-				Name:    "ingress_http",
-				Address: ctx.httpAddr,
-				Port:    ctx.httpPort,
-			},
-		},
-		HTTPSListeners: map[string]xdscache_v3.Listener{
-			"ingress_https": {
-				Name:    "ingress_https",
-				Address: ctx.httpsAddr,
-				Port:    ctx.httpsPort,
-			},
-		},
-		HTTPAccessLog:                 ctx.httpAccessLog,
-		HTTPSAccessLog:                ctx.httpsAccessLog,
-		AccessLogType:                 ctx.Config.AccessLogFormat,
-		AccessLogFields:               ctx.Config.AccessLogFields,
-		MinimumTLSVersion:             annotation.MinTLSVersion(ctx.Config.TLS.MinimumProtocolVersion, "1.2"),
-		CipherSuites:                  config.SanitizeCipherSuites(ctx.Config.TLS.CipherSuites),
-		RequestTimeout:                requestTimeout,
-		ConnectionIdleTimeout:         connectionIdleTimeout,
-		StreamIdleTimeout:             streamIdleTimeout,
-		DelayedCloseTimeout:           delayedCloseTimeout,
-		MaxConnectionDuration:         maxConnectionDuration,
-		ConnectionShutdownGracePeriod: connectionShutdownGracePeriod,
-		DefaultHTTPVersions:           parseDefaultHTTPVersions(ctx.Config.DefaultHTTPVersions),
-		AllowChunkedLength:            !ctx.Config.DisableAllowChunkedLength,
-		XffNumTrustedHops:             ctx.Config.Network.XffNumTrustedHops,
-		ConnectionBalancer:            ctx.Config.Listener.ConnectionBalancer,
-	}
-
-	if ctx.Config.RateLimitService.ExtensionService != "" {
-		namespacedName := k8s.NamespacedNameFrom(ctx.Config.RateLimitService.ExtensionService)
-		client := clients.DynamicClient().Resource(contour_api_v1alpha1.ExtensionServiceGVR).Namespace(namespacedName.Namespace)
-
-		// ensure the specified ExtensionService exists
-		res, err := client.Get(context.Background(), namespacedName.Name, metav1.GetOptions{})
-		if err != nil {
-			return fmt.Errorf("error getting rate limit extension service %s: %v", namespacedName, err)
-		}
-		var extensionSvc contour_api_v1alpha1.ExtensionService
-		if err := runtime.DefaultUnstructuredConverter.FromUnstructured(res.Object, &extensionSvc); err != nil {
-			return fmt.Errorf("error converting rate limit extension service %s: %v", namespacedName, err)
-		}
-		// get the response timeout from the ExtensionService
-		var responseTimeout timeout.Setting
-		if tp := extensionSvc.Spec.TimeoutPolicy; tp != nil {
-			responseTimeout, err = timeout.Parse(tp.Response)
-			if err != nil {
-				return fmt.Errorf("error parsing rate limit extension service %s response timeout: %v", namespacedName, err)
-			}
-		}
-
-		listenerConfig.RateLimitConfig = &xdscache_v3.RateLimitConfig{
-			ExtensionService:        namespacedName,
-			Domain:                  ctx.Config.RateLimitService.Domain,
-			Timeout:                 responseTimeout,
-			FailOpen:                ctx.Config.RateLimitService.FailOpen,
-			EnableXRateLimitHeaders: ctx.Config.RateLimitService.EnableXRateLimitHeaders,
-		}
-	}
-
 	contourMetrics := metrics.NewMetrics(registry)
 
 	// Endpoints updates are handled directly by the EndpointsTranslator
 	// due to their high update rate and their orthogonal nature.
 	endpointHandler := xdscache_v3.NewEndpointsTranslator(log.WithField("context", "endpointstranslator"))
+
+	listenerConfig, err := getListenerConfig(log, ctx, clients)
+	if err != nil {
+		return fmt.Errorf("error getting listener visitor config: %w", err)
+	}
 
 	resources := []xdscache.ResourceCache{
 		xdscache_v3.NewListenerCache(listenerConfig, ctx.statsAddr, ctx.statsPort),
@@ -745,6 +650,110 @@ func getDAGBuilder(ctx *serveContext, clients *k8s.Clients, clientCert, fallback
 	// but it's safe to ignore since this function is only called once.
 	// nolint:govet
 	return builder
+}
+
+func getListenerConfig(log logrus.FieldLogger, ctx *serveContext, clients *k8s.Clients) (xdscache_v3.ListenerConfig, error) {
+	// XXX(jpeach) we know the config file validated, so all
+	// the timeouts will parse. Shall we add a `timeout.MustParse()`
+	// and use it here?
+
+	connectionIdleTimeout, err := timeout.Parse(ctx.Config.Timeouts.ConnectionIdleTimeout)
+	if err != nil {
+		return xdscache_v3.ListenerConfig{}, fmt.Errorf("error parsing connection idle timeout: %w", err)
+	}
+	streamIdleTimeout, err := timeout.Parse(ctx.Config.Timeouts.StreamIdleTimeout)
+	if err != nil {
+		return xdscache_v3.ListenerConfig{}, fmt.Errorf("error parsing stream idle timeout: %w", err)
+	}
+	delayedCloseTimeout, err := timeout.Parse(ctx.Config.Timeouts.DelayedCloseTimeout)
+	if err != nil {
+		return xdscache_v3.ListenerConfig{}, fmt.Errorf("error parsing delayed close timeout: %w", err)
+	}
+	maxConnectionDuration, err := timeout.Parse(ctx.Config.Timeouts.MaxConnectionDuration)
+	if err != nil {
+		return xdscache_v3.ListenerConfig{}, fmt.Errorf("error parsing max connection duration: %w", err)
+	}
+	connectionShutdownGracePeriod, err := timeout.Parse(ctx.Config.Timeouts.ConnectionShutdownGracePeriod)
+	if err != nil {
+		return xdscache_v3.ListenerConfig{}, fmt.Errorf("error parsing connection shutdown grace period: %w", err)
+	}
+	requestTimeout, err := timeout.Parse(ctx.Config.Timeouts.RequestTimeout)
+	if err != nil {
+		return xdscache_v3.ListenerConfig{}, fmt.Errorf("error parsing request timeout: %w", err)
+	}
+
+	// connection balancer
+	if ok := ctx.Config.Listener.ConnectionBalancer == "exact" || ctx.Config.Listener.ConnectionBalancer == ""; !ok {
+		log.Warnf("Invalid listener connection balancer value %q. Only 'exact' connection balancing is supported for now.", ctx.Config.Listener.ConnectionBalancer)
+		ctx.Config.Listener.ConnectionBalancer = ""
+	}
+
+	listenerConfig := xdscache_v3.ListenerConfig{
+		UseProxyProto: ctx.useProxyProto,
+		HTTPListeners: map[string]xdscache_v3.Listener{
+			"ingress_http": {
+				Name:    "ingress_http",
+				Address: ctx.httpAddr,
+				Port:    ctx.httpPort,
+			},
+		},
+		HTTPSListeners: map[string]xdscache_v3.Listener{
+			"ingress_https": {
+				Name:    "ingress_https",
+				Address: ctx.httpsAddr,
+				Port:    ctx.httpsPort,
+			},
+		},
+		HTTPAccessLog:                 ctx.httpAccessLog,
+		HTTPSAccessLog:                ctx.httpsAccessLog,
+		AccessLogType:                 ctx.Config.AccessLogFormat,
+		AccessLogFields:               ctx.Config.AccessLogFields,
+		MinimumTLSVersion:             annotation.MinTLSVersion(ctx.Config.TLS.MinimumProtocolVersion, "1.2"),
+		CipherSuites:                  config.SanitizeCipherSuites(ctx.Config.TLS.CipherSuites),
+		RequestTimeout:                requestTimeout,
+		ConnectionIdleTimeout:         connectionIdleTimeout,
+		StreamIdleTimeout:             streamIdleTimeout,
+		DelayedCloseTimeout:           delayedCloseTimeout,
+		MaxConnectionDuration:         maxConnectionDuration,
+		ConnectionShutdownGracePeriod: connectionShutdownGracePeriod,
+		DefaultHTTPVersions:           parseDefaultHTTPVersions(ctx.Config.DefaultHTTPVersions),
+		AllowChunkedLength:            !ctx.Config.DisableAllowChunkedLength,
+		XffNumTrustedHops:             ctx.Config.Network.XffNumTrustedHops,
+		ConnectionBalancer:            ctx.Config.Listener.ConnectionBalancer,
+	}
+
+	if ctx.Config.RateLimitService.ExtensionService != "" {
+		namespacedName := k8s.NamespacedNameFrom(ctx.Config.RateLimitService.ExtensionService)
+		client := clients.DynamicClient().Resource(contour_api_v1alpha1.ExtensionServiceGVR).Namespace(namespacedName.Namespace)
+
+		// ensure the specified ExtensionService exists
+		res, err := client.Get(context.Background(), namespacedName.Name, metav1.GetOptions{})
+		if err != nil {
+			return xdscache_v3.ListenerConfig{}, fmt.Errorf("error getting rate limit extension service %s: %v", namespacedName, err)
+		}
+		var extensionSvc contour_api_v1alpha1.ExtensionService
+		if err := runtime.DefaultUnstructuredConverter.FromUnstructured(res.Object, &extensionSvc); err != nil {
+			return xdscache_v3.ListenerConfig{}, fmt.Errorf("error converting rate limit extension service %s: %v", namespacedName, err)
+		}
+		// get the response timeout from the ExtensionService
+		var responseTimeout timeout.Setting
+		if tp := extensionSvc.Spec.TimeoutPolicy; tp != nil {
+			responseTimeout, err = timeout.Parse(tp.Response)
+			if err != nil {
+				return xdscache_v3.ListenerConfig{}, fmt.Errorf("error parsing rate limit extension service %s response timeout: %v", namespacedName, err)
+			}
+		}
+
+		listenerConfig.RateLimitConfig = &xdscache_v3.RateLimitConfig{
+			ExtensionService:        namespacedName,
+			Domain:                  ctx.Config.RateLimitService.Domain,
+			Timeout:                 responseTimeout,
+			FailOpen:                ctx.Config.RateLimitService.FailOpen,
+			EnableXRateLimitHeaders: ctx.Config.RateLimitService.EnableXRateLimitHeaders,
+		}
+	}
+
+	return listenerConfig, nil
 }
 
 func contains(namespaces []string, ns string) bool {

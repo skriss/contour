@@ -15,8 +15,12 @@ package main
 
 import (
 	"testing"
+	"time"
 
 	"github.com/projectcontour/contour/internal/dag"
+	"github.com/projectcontour/contour/internal/timeout"
+	xdscache_v3 "github.com/projectcontour/contour/internal/xdscache/v3"
+	"github.com/projectcontour/contour/pkg/config"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -105,4 +109,70 @@ func mustGetHTTPProxyProcessor(t *testing.T, builder *dag.Builder) *dag.HTTPProx
 
 	require.FailNow(t, "HTTPProxyProcessor not found in list of DAG builder's processors")
 	return nil
+}
+
+func TestGetListenerConfig(t *testing.T) {
+	// defaultListenerConfig returns the listener config that's
+	// expected given a serveContext with no fields specified.
+	defaultListenerConfig := func() xdscache_v3.ListenerConfig {
+		return xdscache_v3.ListenerConfig{
+			HTTPListeners: map[string]xdscache_v3.Listener{
+				"ingress_http": {Name: "ingress_http"},
+			},
+			HTTPSListeners: map[string]xdscache_v3.Listener{
+				"ingress_https": {Name: "ingress_https"},
+			},
+			MinimumTLSVersion: "1.2",
+			CipherSuites: []string{
+				"[ECDHE-ECDSA-AES128-GCM-SHA256|ECDHE-ECDSA-CHACHA20-POLY1305]",
+				"[ECDHE-RSA-AES128-GCM-SHA256|ECDHE-RSA-CHACHA20-POLY1305]",
+				"ECDHE-ECDSA-AES256-GCM-SHA384",
+				"ECDHE-RSA-AES256-GCM-SHA384",
+			},
+			AllowChunkedLength: true,
+		}
+	}
+
+	tests := map[string]struct {
+		ctx       *serveContext
+		setupWant func(*xdscache_v3.ListenerConfig)
+	}{
+		"default serve context": {
+			ctx:       &serveContext{},
+			setupWant: func(*xdscache_v3.ListenerConfig) {},
+		},
+		"timeout values specified": {
+			ctx: &serveContext{
+				Config: config.Parameters{
+					Timeouts: config.TimeoutParameters{
+						ConnectionIdleTimeout:         "1s",
+						StreamIdleTimeout:             "2s",
+						DelayedCloseTimeout:           "3s",
+						MaxConnectionDuration:         "4s",
+						ConnectionShutdownGracePeriod: "5s",
+						RequestTimeout:                "6s",
+					},
+				},
+			},
+			setupWant: func(cfg *xdscache_v3.ListenerConfig) {
+				cfg.ConnectionIdleTimeout = timeout.DurationSetting(1 * time.Second)
+				cfg.StreamIdleTimeout = timeout.DurationSetting(2 * time.Second)
+				cfg.DelayedCloseTimeout = timeout.DurationSetting(3 * time.Second)
+				cfg.MaxConnectionDuration = timeout.DurationSetting(4 * time.Second)
+				cfg.ConnectionShutdownGracePeriod = timeout.DurationSetting(5 * time.Second)
+				cfg.RequestTimeout = timeout.DurationSetting(6 * time.Second)
+			},
+		},
+	}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			want := defaultListenerConfig()
+			tc.setupWant(&want)
+
+			got, err := getListenerConfig(logrus.StandardLogger(), tc.ctx, nil)
+			require.NoError(t, err)
+
+			assert.Equal(t, want, got)
+		})
+	}
 }
