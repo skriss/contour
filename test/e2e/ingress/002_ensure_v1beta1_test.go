@@ -18,6 +18,7 @@ package ingress
 import (
 	"context"
 
+	. "github.com/onsi/ginkgo"
 	"github.com/projectcontour/contour/test/e2e"
 	"github.com/stretchr/testify/require"
 	"k8s.io/api/extensions/v1beta1"
@@ -25,15 +26,20 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
+var _ = Describe("002-ingress-ensure-v1beta1", func() {
+	It("ensures ingress v1beta1 works", func() {
+		testIngressV1Beta1(f)
+	})
+})
+
 // Explicitly ensure v1beta1 resources continue to work.
-func testEnsureV1Beta1(fx *e2e.Framework) {
-	t := fx.T()
+func testIngressV1Beta1(f *e2e.Framework) {
 	namespace := "002-ingress-ensure-v1beta1"
 
-	fx.CreateNamespace(namespace)
-	defer fx.DeleteNamespace(namespace)
+	f.CreateNamespace(namespace)
+	defer f.DeleteNamespace(namespace)
 
-	fx.Fixtures.Echo.Deploy(namespace, "ingress-conformance-echo")
+	f.Fixtures.Echo.Deploy(namespace, "ingress-conformance-echo")
 
 	ingressHost := "v1beta1.projectcontour.io"
 	i := &v1beta1.Ingress{
@@ -61,12 +67,12 @@ func testEnsureV1Beta1(fx *e2e.Framework) {
 			},
 		},
 	}
-	require.NoError(t, fx.Client.Create(context.TODO(), i))
+	require.NoError(f.T(), f.Client.Create(context.TODO(), i))
 
-	res, ok := fx.HTTP.RequestUntil(&e2e.HTTPRequestOpts{
+	res, ok := f.HTTP.RequestUntil(&e2e.HTTPRequestOpts{
 		Host:      ingressHost,
 		Path:      "/echo",
 		Condition: e2e.HasStatusCode(200),
 	})
-	require.Truef(t, ok, "expected 200 response code, got %d", res.StatusCode)
+	require.Truef(f.T(), ok, "expected 200 response code, got %d", res.StatusCode)
 }
