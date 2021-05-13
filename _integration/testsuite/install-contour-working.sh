@@ -51,7 +51,13 @@ if ! kind::cluster::exists "$CLUSTERNAME" ; then
 fi
 
 # Build the current version of Contour.
-make -C ${REPO} container IMAGE=docker.io/projectcontour/contour VERSION="v$$"
+# make -C ${REPO} container IMAGE=docker.io/projectcontour/contour VERSION="v$$"
+
+make -C ${REPO} build
+
+TAG=docker.io/projectcontour/contour:v$$
+echo "TAG: ${TAG}"
+docker build --file Dockerfile.test --tag $TAG ${REPO}
 
 for t in $TAGS ; do
     docker tag \
