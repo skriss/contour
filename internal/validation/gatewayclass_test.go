@@ -24,7 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	gatewayapi_v1alpha1 "sigs.k8s.io/gateway-api/apis/v1alpha1"
+	gatewayapi_v1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 )
 
 var (
@@ -32,16 +32,16 @@ var (
 
 	defaultController = "projectcontour.io/projectcontour/contour"
 
-	new = &gatewayapi_v1alpha1.GatewayClass{
+	new = &gatewayapi_v1alpha2.GatewayClass{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "new",
 		},
-		Spec: gatewayapi_v1alpha1.GatewayClassSpec{
+		Spec: gatewayapi_v1alpha2.GatewayClassSpec{
 			Controller: defaultController,
 		},
 	}
 
-	old = &gatewayapi_v1alpha1.GatewayClass{
+	old = &gatewayapi_v1alpha2.GatewayClass{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "old",
 		},
@@ -50,18 +50,18 @@ var (
 
 func TestGatewayClass(t *testing.T) {
 	testCases := map[string]struct {
-		mutateNew func(gc *gatewayapi_v1alpha1.GatewayClass)
-		mutateOld func(gc *gatewayapi_v1alpha1.GatewayClass)
+		mutateNew func(gc *gatewayapi_v1alpha2.GatewayClass)
+		mutateOld func(gc *gatewayapi_v1alpha2.GatewayClass)
 		errType   field.ErrorType
 		errField  string
 		expect    bool
 	}{
 		"valid gatewayclass": {
-			mutateNew: func(_ *gatewayapi_v1alpha1.GatewayClass) {},
+			mutateNew: func(_ *gatewayapi_v1alpha2.GatewayClass) {},
 			expect:    true,
 		},
 		"invalid name": {
-			mutateNew: func(gc *gatewayapi_v1alpha1.GatewayClass) {
+			mutateNew: func(gc *gatewayapi_v1alpha2.GatewayClass) {
 				gc.Name = "invalid name"
 			},
 			errType:  field.ErrorTypeInvalid,
@@ -69,13 +69,13 @@ func TestGatewayClass(t *testing.T) {
 			expect:   false,
 		},
 		"existing admitted gatewayclass with same controller": {
-			mutateNew: func(_ *gatewayapi_v1alpha1.GatewayClass) {},
-			mutateOld: func(gc *gatewayapi_v1alpha1.GatewayClass) {
+			mutateNew: func(_ *gatewayapi_v1alpha2.GatewayClass) {},
+			mutateOld: func(gc *gatewayapi_v1alpha2.GatewayClass) {
 				gc.Spec.Controller = defaultController
-				gc.Status = gatewayapi_v1alpha1.GatewayClassStatus{
+				gc.Status = gatewayapi_v1alpha2.GatewayClassStatus{
 					Conditions: []metav1.Condition{
 						{
-							Type:   string(gatewayapi_v1alpha1.GatewayClassConditionStatusAdmitted),
+							Type:   string(gatewayapi_v1alpha2.GatewayClassConditionStatusAdmitted),
 							Status: metav1.ConditionTrue,
 						},
 					},
@@ -86,13 +86,13 @@ func TestGatewayClass(t *testing.T) {
 			expect:   false,
 		},
 		"existing non-admitted gatewayclass with same controller": {
-			mutateNew: func(_ *gatewayapi_v1alpha1.GatewayClass) {},
-			mutateOld: func(gc *gatewayapi_v1alpha1.GatewayClass) {
+			mutateNew: func(_ *gatewayapi_v1alpha2.GatewayClass) {},
+			mutateOld: func(gc *gatewayapi_v1alpha2.GatewayClass) {
 				gc.Spec.Controller = defaultController
-				gc.Status = gatewayapi_v1alpha1.GatewayClassStatus{
+				gc.Status = gatewayapi_v1alpha2.GatewayClassStatus{
 					Conditions: []metav1.Condition{
 						{
-							Type:   string(gatewayapi_v1alpha1.GatewayClassConditionStatusAdmitted),
+							Type:   string(gatewayapi_v1alpha2.GatewayClassConditionStatusAdmitted),
 							Status: metav1.ConditionFalse,
 						},
 					},
@@ -101,13 +101,13 @@ func TestGatewayClass(t *testing.T) {
 			expect: true,
 		},
 		"existing gatewayclass with different controller": {
-			mutateNew: func(_ *gatewayapi_v1alpha1.GatewayClass) {},
-			mutateOld: func(gc *gatewayapi_v1alpha1.GatewayClass) {
+			mutateNew: func(_ *gatewayapi_v1alpha2.GatewayClass) {},
+			mutateOld: func(gc *gatewayapi_v1alpha2.GatewayClass) {
 				gc.Spec.Controller = "foo.io/bar"
-				gc.Status = gatewayapi_v1alpha1.GatewayClassStatus{
+				gc.Status = gatewayapi_v1alpha2.GatewayClassStatus{
 					Conditions: []metav1.Condition{
 						{
-							Type:   string(gatewayapi_v1alpha1.GatewayClassConditionStatusAdmitted),
+							Type:   string(gatewayapi_v1alpha2.GatewayClassConditionStatusAdmitted),
 							Status: metav1.ConditionTrue,
 						},
 					},
@@ -116,9 +116,9 @@ func TestGatewayClass(t *testing.T) {
 			expect: true,
 		},
 		"gatewayclass paramsRef specified": {
-			mutateNew: func(gc *gatewayapi_v1alpha1.GatewayClass) {
+			mutateNew: func(gc *gatewayapi_v1alpha2.GatewayClass) {
 				gc.Name = "gatewayclass-params-specified"
-				gc.Spec.ParametersRef = &gatewayapi_v1alpha1.ParametersReference{
+				gc.Spec.ParametersRef = &gatewayapi_v1alpha2.ParametersReference{
 					Group: "foo",
 					Kind:  "bar",
 					Name:  "baz",
@@ -127,7 +127,7 @@ func TestGatewayClass(t *testing.T) {
 			expect: true,
 		},
 		"gatewayclass paramsRef not specified": {
-			mutateNew: func(gc *gatewayapi_v1alpha1.GatewayClass) {
+			mutateNew: func(gc *gatewayapi_v1alpha2.GatewayClass) {
 				gc.Name = "gatewayclass-params-not-specified"
 			},
 			expect: true,

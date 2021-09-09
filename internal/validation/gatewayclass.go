@@ -21,7 +21,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	gatewayapi_v1alpha1 "sigs.k8s.io/gateway-api/apis/v1alpha1"
+	gatewayapi_v1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 )
 
 // Note: gatewayclass controller immutability cannot be enforced without the
@@ -34,7 +34,7 @@ var ValidateGatewayClassName = apivalidation.NameIsDNSSubdomain
 // ValidateGatewayClass validates gc according to the Gateway API specification.
 // For additional details of the Gateway spec, refer to:
 //   https://gateway-api.sigs.k8s.io/spec/#networking.x-k8s.io/v1alpha1.Gateway
-func ValidateGatewayClass(ctx context.Context, cli client.Client, gc *gatewayapi_v1alpha1.GatewayClass, controller string) field.ErrorList {
+func ValidateGatewayClass(ctx context.Context, cli client.Client, gc *gatewayapi_v1alpha2.GatewayClass, controller string) field.ErrorList {
 	var errs field.ErrorList
 
 	errs = append(errs, validateGatewayClassObjMeta(&gc.ObjectMeta, field.NewPath("metadata"))...)
@@ -51,10 +51,10 @@ func validateGatewayClassObjMeta(meta *metav1.ObjectMeta, path *field.Path) fiel
 
 // validateGatewayClassSpec validates whether required fields of spec are set according
 // to the Gateway API specification.
-func validateGatewayClassSpec(ctx context.Context, cli client.Client, gc *gatewayapi_v1alpha1.GatewayClass, controller string, path *field.Path) field.ErrorList {
+func validateGatewayClassSpec(ctx context.Context, cli client.Client, gc *gatewayapi_v1alpha2.GatewayClass, controller string, path *field.Path) field.ErrorList {
 	var errs field.ErrorList
 
-	classes := &gatewayapi_v1alpha1.GatewayClassList{}
+	classes := &gatewayapi_v1alpha2.GatewayClassList{}
 	if err := cli.List(ctx, classes); err != nil {
 		errs = append(errs, field.InternalError(path, fmt.Errorf("failed to list gatewayclasses: %v", err)))
 		return errs
@@ -64,7 +64,7 @@ func validateGatewayClassSpec(ctx context.Context, cli client.Client, gc *gatewa
 	for _, item := range classes.Items {
 		if item.Name != gc.Name && item.Spec.Controller == controller {
 			for _, condition := range item.Status.Conditions {
-				if condition.Type == string(gatewayapi_v1alpha1.GatewayClassConditionStatusAdmitted) &&
+				if condition.Type == string(gatewayapi_v1alpha2.GatewayClassConditionStatusAdmitted) &&
 					condition.Status == metav1.ConditionTrue {
 					errs = append(errs, field.InternalError(path.Child("controller"),
 						fmt.Errorf("admitted gatewayclass %q with controller %q found", item.Name, controller)))
