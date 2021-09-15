@@ -196,7 +196,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.6.0
+    controller-gen.kubebuilder.io/version: v0.6.2
   creationTimestamp: null
   name: contourconfigurations.projectcontour.io
 spec:
@@ -462,7 +462,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.6.0
+    controller-gen.kubebuilder.io/version: v0.6.2
   creationTimestamp: null
   name: contourdeployments.projectcontour.io
 spec:
@@ -741,7 +741,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.6.0
+    controller-gen.kubebuilder.io/version: v0.6.2
   creationTimestamp: null
   name: extensionservices.projectcontour.io
 spec:
@@ -1141,7 +1141,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.6.0
+    controller-gen.kubebuilder.io/version: v0.6.2
   creationTimestamp: null
   name: httpproxies.projectcontour.io
 spec:
@@ -2925,7 +2925,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.6.0
+    controller-gen.kubebuilder.io/version: v0.6.2
   creationTimestamp: null
   name: tlscertificatedelegations.projectcontour.io
 spec:
@@ -3365,6 +3365,30 @@ rules:
   verbs:
   - list
 - apiGroups:
+  - gateway.networking.k8s.io
+  resources:
+  - gatewayclasses
+  - gateways
+  - httproutes
+  - tcproutes
+  - tlsroutes
+  - udproutes
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - gateway.networking.k8s.io
+  resources:
+  - gatewayclasses/status
+  - gateways/status
+  - httproutes/status
+  - tcproutes/status
+  - tlsroutes/status
+  - udproutes/status
+  verbs:
+  - update
+- apiGroups:
   - networking.k8s.io
   resources:
   - ingressclasses
@@ -3387,30 +3411,6 @@ rules:
   verbs:
   - create
   - get
-  - update
-- apiGroups:
-  - networking.x-k8s.io
-  resources:
-  - gatewayclasses
-  - gateways
-  - httproutes
-  - tcproutes
-  - tlsroutes
-  - udproutes
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - networking.x-k8s.io
-  resources:
-  - gatewayclasses/status
-  - gateways/status
-  - httproutes/status
-  - tcproutes/status
-  - tlsroutes/status
-  - udproutes/status
-  verbs:
   - update
 - apiGroups:
   - projectcontour.io
