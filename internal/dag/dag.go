@@ -442,8 +442,6 @@ type VirtualHost struct {
 	// as defined by RFC 3986.
 	Name string
 
-	ListenerName string
-
 	// CORSPolicy is the cross-origin policy to apply to the VirtualHost.
 	CORSPolicy *CORSPolicy
 

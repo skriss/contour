@@ -112,9 +112,9 @@ func externalName(svc *v1.Service) string {
 // GetSecureVirtualHost returns the secure virtual host in the DAG that
 // matches the provided name, or nil if no matching secure virtual host
 // is found.
-func (d *DAG) GetSecureVirtualHost(ln ListenerName) *SecureVirtualHost {
+func (d *DAG) GetSecureVirtualHost(hostname string) *SecureVirtualHost {
 	for _, svh := range d.SecureVirtualHosts {
-		if svh.Name == ln.Name && svh.VirtualHost.ListenerName == ln.ListenerName {
+		if svh.Name == hostname {
 			return svh
 		}
 	}
@@ -124,15 +124,14 @@ func (d *DAG) GetSecureVirtualHost(ln ListenerName) *SecureVirtualHost {
 
 // EnsureSecureVirtualHost adds a secure virtual host with the provided
 // name to the DAG if it does not already exist, and returns it.
-func (d *DAG) EnsureSecureVirtualHost(ln ListenerName) *SecureVirtualHost {
-	if svh := d.GetSecureVirtualHost(ln); svh != nil {
+func (d *DAG) EnsureSecureVirtualHost(hostname string) *SecureVirtualHost {
+	if svh := d.GetSecureVirtualHost(hostname); svh != nil {
 		return svh
 	}
 
 	svh := &SecureVirtualHost{
 		VirtualHost: VirtualHost{
-			Name:         ln.Name,
-			ListenerName: ln.ListenerName,
+			Name: hostname,
 		},
 	}
 	d.SecureVirtualHosts = append(d.SecureVirtualHosts, svh)
@@ -141,9 +140,9 @@ func (d *DAG) EnsureSecureVirtualHost(ln ListenerName) *SecureVirtualHost {
 
 // GetVirtualHost returns the virtual host in the DAG that matches the
 // provided name, or nil if no matching virtual host is found.
-func (d *DAG) GetVirtualHost(ln ListenerName) *VirtualHost {
+func (d *DAG) GetVirtualHost(hostname string) *VirtualHost {
 	for _, vh := range d.VirtualHosts {
-		if vh.Name == ln.Name && vh.ListenerName == ln.ListenerName {
+		if vh.Name == hostname {
 			return vh
 		}
 	}
@@ -153,14 +152,13 @@ func (d *DAG) GetVirtualHost(ln ListenerName) *VirtualHost {
 
 // EnsureVirtualHost adds a virtual host with the provided name to the
 // DAG if it does not already exist, and returns it.
-func (d *DAG) EnsureVirtualHost(ln ListenerName) *VirtualHost {
-	if vhost := d.GetVirtualHost(ln); vhost != nil {
+func (d *DAG) EnsureVirtualHost(hostname string) *VirtualHost {
+	if vhost := d.GetVirtualHost(hostname); vhost != nil {
 		return vhost
 	}
 
 	vhost := &VirtualHost{
-		Name:         ln.Name,
-		ListenerName: ln.ListenerName,
+		Name: hostname,
 	}
 	d.VirtualHosts = append(d.VirtualHosts, vhost)
 	return vhost

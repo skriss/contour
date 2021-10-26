@@ -48,6 +48,7 @@ func (p *ListenerProcessor) buildHTTPListener(dag *DAG) {
 	})
 
 	http := &Listener{
+		Name:         "ingress_http",
 		Port:         80,
 		VirtualHosts: vhosts,
 	}
@@ -75,6 +76,7 @@ func (p *ListenerProcessor) buildHTTPSListener(dag *DAG) {
 	})
 
 	https := &Listener{
+		Name:               "ingress_https",
 		Port:               443,
 		SecureVirtualHosts: vhosts,
 	}
