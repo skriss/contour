@@ -113,13 +113,7 @@ func externalName(svc *v1.Service) string {
 // matches the provided name, or nil if no matching secure virtual host
 // is found.
 func (d *DAG) GetSecureVirtualHost(hostname string) *SecureVirtualHost {
-	for _, svh := range d.SecureVirtualHosts {
-		if svh.Name == hostname {
-			return svh
-		}
-	}
-
-	return nil
+	return d.SecureVirtualHosts[hostname]
 }
 
 // EnsureSecureVirtualHost adds a secure virtual host with the provided
@@ -134,20 +128,14 @@ func (d *DAG) EnsureSecureVirtualHost(hostname string) *SecureVirtualHost {
 			Name: hostname,
 		},
 	}
-	d.SecureVirtualHosts = append(d.SecureVirtualHosts, svh)
+	d.SecureVirtualHosts[hostname] = svh
 	return svh
 }
 
 // GetVirtualHost returns the virtual host in the DAG that matches the
 // provided name, or nil if no matching virtual host is found.
 func (d *DAG) GetVirtualHost(hostname string) *VirtualHost {
-	for _, vh := range d.VirtualHosts {
-		if vh.Name == hostname {
-			return vh
-		}
-	}
-
-	return nil
+	return d.VirtualHosts[hostname]
 }
 
 // EnsureVirtualHost adds a virtual host with the provided name to the
@@ -160,7 +148,7 @@ func (d *DAG) EnsureVirtualHost(hostname string) *VirtualHost {
 	vhost := &VirtualHost{
 		Name: hostname,
 	}
-	d.VirtualHosts = append(d.VirtualHosts, vhost)
+	d.VirtualHosts[hostname] = vhost
 	return vhost
 }
 
