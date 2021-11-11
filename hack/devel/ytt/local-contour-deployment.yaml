@@ -1,0 +1,51 @@
+#@ load("@ytt:overlay", "overlay")
+#@ load("@ytt:data", "data")
+#@ load("@ytt:yaml", "yaml")
+
+#@overlay/match by=overlay.subset({"kind": "Deployment"}),expects=1
+#@overlay.remove
+---
+
+#@overlay/match by=overlay.subset({"kind": "ConfigMap"}),expects=1
+#@overlay.remove
+---
+
+#@overlay/match by=overlay.subset({"kind": "DaemonSet"}),expects=1
+---
+spec:
+  template:
+    spec:
+      containers:
+        
+        #@overlay/match by=overlay.index(1)
+        - volumeMounts:
+          #@overlay/match by=overlay.subset({"name": "envoycert"})
+          #@overlay/remove
+          - name: envoycert
+      
+      initContainers:
+        #@overlay/match by=overlay.index(0)
+        - args:
+            #@overlay/match by=overlay.subset("--xds-address=contour")
+            #@overlay/replace
+            #@yaml/text-templated-strings
+            - "--xds-address=(@= data.values.xdsAddress @)"
+            #@overlay/match by=overlay.subset("--envoy-cafile=/certs/ca.crt")
+            #@overlay/remove
+            - --envoy-cafile=/certs/ca.crt
+            #@overlay/match by=overlay.subset("--envoy-cert-file=/certs/tls.crt")
+            #@overlay/remove
+            - --envoy-cert-file=/certs/tls.crt
+            #@overlay/match by=overlay.subset("--envoy-key-file=/certs/tls.key")
+            #@overlay/remove
+            - --envoy-key-file=/certs/tls.key
+          
+          volumeMounts:
+            #@overlay/match by=overlay.subset({"name": "envoycert"})
+            #@overlay/remove
+            - name: envoycert
+
+      volumes:
+        #@overlay/match by=overlay.subset({"name": "envoycert"})
+        #@overlay/remove
+        - name: envoycert

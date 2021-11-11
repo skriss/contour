@@ -316,6 +316,13 @@ check-ingress-conformance: | install-contour-working run-ingress-conformance cle
 run-ingress-conformance:
 	./test/scripts/run-ingress-conformance.sh
 
+# Deploy everything but the Contour server into the cluster
+# pointed to by KUBECONFIG in insecure mode, and then build
+# and run Contour locally.
+.PHONY: devel-run
+devel-run:
+	@./hack/devel/deploy-and-run.sh XDS_ADDRESS=${XDS_ADDRESS}
+
 help: ## Display this help
 	@echo Contour high performance Ingress controller for Kubernetes
 	@echo
