@@ -199,11 +199,6 @@ func (gatewayUpdate *GatewayStatusUpdate) Mutate(obj client.Object) client.Objec
 		}
 	}
 
-	// TODO hack
-	if cond, ok := gatewayUpdate.ExistingConditions[gatewayapi_v1alpha2.GatewayConditionScheduled]; ok {
-		conditionsToWrite = append(conditionsToWrite, cond)
-	}
-
 	updated.Status.Conditions = conditionsToWrite
 
 	// Overwrite all listener statuses since we re-compute all of them
