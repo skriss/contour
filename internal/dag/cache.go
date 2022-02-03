@@ -47,6 +47,8 @@ type KubernetesCache struct {
 	// cached.
 	IngressClassNames []string
 
+	Gateway types.NamespacedName
+
 	// Secrets that are referred from the configuration file.
 	ConfiguredSecretRefs []*types.NamespacedName
 
@@ -56,7 +58,6 @@ type KubernetesCache struct {
 	tlscertificatedelegations map[types.NamespacedName]*contour_api_v1.TLSCertificateDelegation
 	services                  map[types.NamespacedName]*v1.Service
 	namespaces                map[string]*v1.Namespace
-	gatewayclass              *gatewayapi_v1alpha2.GatewayClass
 	gateway                   *gatewayapi_v1alpha2.Gateway
 	httproutes                map[types.NamespacedName]*gatewayapi_v1alpha2.HTTPRoute
 	tlsroutes                 map[types.NamespacedName]*gatewayapi_v1alpha2.TLSRoute
@@ -145,10 +146,11 @@ func (kc *KubernetesCache) Insert(obj interface{}) bool {
 		case *contour_api_v1.TLSCertificateDelegation:
 			kc.tlscertificatedelegations[k8s.NamespacedNameOf(obj)] = obj
 			return true
-		case *gatewayapi_v1alpha2.GatewayClass:
-			kc.gatewayclass = obj
-			return true
 		case *gatewayapi_v1alpha2.Gateway:
+			if k8s.NamespacedNameOf(obj) != kc.Gateway {
+				return false
+			}
+
 			kc.gateway = obj
 			return true
 		case *gatewayapi_v1alpha2.HTTPRoute:
@@ -247,10 +249,14 @@ func (kc *KubernetesCache) remove(obj interface{}) bool {
 		_, ok := kc.tlscertificatedelegations[m]
 		delete(kc.tlscertificatedelegations, m)
 		return ok
-	case *gatewayapi_v1alpha2.GatewayClass:
-		kc.gatewayclass = nil
-		return true
 	case *gatewayapi_v1alpha2.Gateway:
+		if kc.gateway == nil {
+			return false
+		}
+		if k8s.NamespacedNameOf(obj) != kc.Gateway {
+			return false
+		}
+
 		kc.gateway = nil
 		return true
 	case *gatewayapi_v1alpha2.HTTPRoute:

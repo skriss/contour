@@ -14,7 +14,6 @@
 package k8s
 
 import (
-	"context"
 	"fmt"
 	"sync"
 
@@ -38,12 +37,12 @@ import (
 // Note that this is intended to handle updating the status.loadBalancer struct only,
 // not more general status updates. That's a job for the StatusUpdater.
 type StatusAddressUpdater struct {
-	Logger                logrus.FieldLogger
-	Cache                 cache.Cache
-	LBStatus              v1.LoadBalancerStatus
-	IngressClassNames     []string
-	GatewayControllerName string
-	StatusUpdater         StatusUpdater
+	Logger            logrus.FieldLogger
+	Cache             cache.Cache
+	LBStatus          v1.LoadBalancerStatus
+	IngressClassNames []string
+	GatewayName       string
+	StatusUpdater     StatusUpdater
 
 	// mu guards the LBStatus field, which can be updated dynamically.
 	mu sync.Mutex
@@ -131,24 +130,11 @@ func (s *StatusAddressUpdater) OnAdd(obj interface{}) {
 		))
 
 	case *gatewayapi_v1alpha2.Gateway:
-		// Check if the Gateway's class is controlled by this Contour
-		gc := &gatewayapi_v1alpha2.GatewayClass{}
-		if err := s.Cache.Get(context.Background(), client.ObjectKey{Name: string(o.Spec.GatewayClassName)}, gc); err != nil {
+		if NamespacedNameOf(o).String() != s.GatewayName {
 			s.Logger.
 				WithField("name", o.Name).
 				WithField("namespace", o.Namespace).
-				WithField("gatewayclass-name", o.Spec.GatewayClassName).
-				WithError(err).
-				Error("error getting gateway class for gateway")
-			return
-		}
-		if string(gc.Spec.ControllerName) != s.GatewayControllerName {
-			s.Logger.
-				WithField("name", o.Name).
-				WithField("namespace", o.Namespace).
-				WithField("gatewayclass-name", o.Spec.GatewayClassName).
-				WithField("gatewayclass-controller-name", gc.Spec.ControllerName).
-				Debug("Gateway's class is not controlled by this Contour, not setting address")
+				Debug("Gateway is not for this Contour, not setting address")
 			return
 		}
 

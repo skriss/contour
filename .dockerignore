@@ -1,6 +1,5 @@
 /.git
 /vendor
 /hack
-/contour
 *.test
 /site

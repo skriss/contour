@@ -105,11 +105,7 @@ type XDSServerConfig struct {
 
 // GatewayConfig holds the config for Gateway API controllers.
 type GatewayConfig struct {
-	// ControllerName is used to determine whether Contour should reconcile a
-	// GatewayClass. The string takes the form of "projectcontour.io/<namespace>/contour".
-	// If unset, the gatewayclass controller will not be started.
-	// +kubebuilder:default="projectcontour.io/projectcontour/contour"
-	ControllerName string `json:"controllerName"`
+	GatewayName string `json:"gatewayName,omitempty"`
 }
 
 // TLS holds TLS file config details.

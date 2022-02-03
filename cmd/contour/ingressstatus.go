@@ -47,12 +47,12 @@ import (
 // 5. If the worker is stopped, the informer continues but no further
 //    status updates are made.
 type loadBalancerStatusWriter struct {
-	log                   logrus.FieldLogger
-	cache                 cache.Cache
-	lbStatus              chan v1.LoadBalancerStatus
-	statusUpdater         k8s.StatusUpdater
-	ingressClassNames     []string
-	gatewayControllerName string
+	log               logrus.FieldLogger
+	cache             cache.Cache
+	lbStatus          chan v1.LoadBalancerStatus
+	statusUpdater     k8s.StatusUpdater
+	ingressClassNames []string
+	gatewayName       string
 }
 
 func (isw *loadBalancerStatusWriter) NeedLeaderElection() bool {
@@ -70,10 +70,10 @@ func (isw *loadBalancerStatusWriter) Start(ctx context.Context) error {
 
 			return log
 		}(),
-		Cache:                 isw.cache,
-		IngressClassNames:     isw.ingressClassNames,
-		GatewayControllerName: isw.gatewayControllerName,
-		StatusUpdater:         isw.statusUpdater,
+		Cache:             isw.cache,
+		IngressClassNames: isw.ingressClassNames,
+		GatewayName:       isw.gatewayName,
+		StatusUpdater:     isw.statusUpdater,
 	}
 
 	// Create informers for the types that need load balancer
@@ -86,7 +86,7 @@ func (isw *loadBalancerStatusWriter) Start(ctx context.Context) error {
 
 	// Only create Gateway informer if a controller name was provided,
 	// otherwise the API may not exist in the cluster.
-	if len(isw.gatewayControllerName) > 0 {
+	if len(isw.gatewayName) > 0 {
 		resources = append(resources, &gatewayapi_v1alpha2.Gateway{})
 	}
 
@@ -134,7 +134,7 @@ func (isw *loadBalancerStatusWriter) Start(ctx context.Context) error {
 
 			// Only list Gateways if a controller name was configured,
 			// otherwise the API may not exist in the cluster.
-			if len(isw.gatewayControllerName) > 0 {
+			if len(isw.gatewayName) > 0 {
 				var gatewayList gatewayapi_v1alpha2.GatewayList
 				if err := isw.cache.List(context.Background(), &gatewayList); err != nil {
 					isw.log.WithError(err).WithField("kind", "Gateway").Error("failed to list objects")

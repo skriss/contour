@@ -231,7 +231,7 @@ func (c *Cache) RouteConditionsAccessor(nsName types.NamespacedName, generation 
 		Conditions:         make(map[gatewayapi_v1alpha2.RouteConditionType]metav1.Condition),
 		ExistingConditions: c.getRouteGatewayConditions(gateways),
 		GatewayRef:         c.gatewayRef,
-		GatewayController:  c.gatewayController,
+		GatewayController:  "projectcontour.io/contour",
 		Generation:         generation,
 		TransitionTime:     metav1.NewTime(clock.Now()),
 		Resource:           resource,

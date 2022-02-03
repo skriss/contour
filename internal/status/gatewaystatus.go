@@ -146,11 +146,14 @@ func (gatewayUpdate *GatewayStatusUpdate) AddListenerCondition(
 
 func getGatewayConditions(gs *gatewayapi_v1alpha2.GatewayStatus) map[gatewayapi_v1alpha2.GatewayConditionType]metav1.Condition {
 	conditions := make(map[gatewayapi_v1alpha2.GatewayConditionType]metav1.Condition)
+
 	for _, cond := range gs.Conditions {
-		if val, ok := conditions[gatewayapi_v1alpha2.GatewayConditionType(cond.Type)]; !ok {
-			conditions[gatewayapi_v1alpha2.GatewayConditionType(cond.Type)] = val
+		if _, ok := conditions[gatewayapi_v1alpha2.GatewayConditionType(cond.Type)]; !ok {
+			// THERE WAS A DEFINITE BUG HERE
+			conditions[gatewayapi_v1alpha2.GatewayConditionType(cond.Type)] = cond
 		}
 	}
+
 	return conditions
 }
 
@@ -194,6 +197,11 @@ func (gatewayUpdate *GatewayStatusUpdate) Mutate(obj client.Object) client.Objec
 		if !newerConditionExists {
 			conditionsToWrite = append(conditionsToWrite, cond)
 		}
+	}
+
+	// TODO hack
+	if cond, ok := gatewayUpdate.ExistingConditions[gatewayapi_v1alpha2.GatewayConditionScheduled]; ok {
+		conditionsToWrite = append(conditionsToWrite, cond)
 	}
 
 	updated.Status.Conditions = conditionsToWrite

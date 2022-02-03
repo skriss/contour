@@ -389,10 +389,16 @@ func (s *Server) doServe() error {
 		return err
 	}
 
+	var gateway *types.NamespacedName
+	if contourConfiguration.Gateway != nil {
+		nsName := k8s.NamespacedNameFrom(contourConfiguration.Gateway.GatewayName)
+		gateway = &nsName
+	}
+
 	builder := s.getDAGBuilder(dagBuilderConfig{
 		ingressClassNames:         ingressClassNames,
 		rootNamespaces:            contourConfiguration.HTTPProxy.RootNamespaces,
-		gatewayAPIConfigured:      contourConfiguration.Gateway != nil,
+		gateway:                   gateway,
 		disablePermitInsecure:     contourConfiguration.HTTPProxy.DisablePermitInsecure,
 		enableExternalNameService: contourConfiguration.EnableExternalNameService,
 		dnsLookupFamily:           contourConfiguration.Envoy.Cluster.DNSLookupFamily,
@@ -478,19 +484,19 @@ func (s *Server) doServe() error {
 		return err
 	}
 
-	var gatewayControllerName string
+	var gatewayName string
 	if contourConfiguration.Gateway != nil {
-		gatewayControllerName = contourConfiguration.Gateway.ControllerName
+		gatewayName = contourConfiguration.Gateway.GatewayName
 	}
 
 	// Set up ingress load balancer status writer.
 	lbsw := &loadBalancerStatusWriter{
-		log:                   s.log.WithField("context", "loadBalancerStatusWriter"),
-		cache:                 s.mgr.GetCache(),
-		lbStatus:              make(chan corev1.LoadBalancerStatus, 1),
-		ingressClassNames:     ingressClassNames,
-		gatewayControllerName: gatewayControllerName,
-		statusUpdater:         sh.Writer(),
+		log:               s.log.WithField("context", "loadBalancerStatusWriter"),
+		cache:             s.mgr.GetCache(),
+		lbStatus:          make(chan corev1.LoadBalancerStatus, 1),
+		ingressClassNames: ingressClassNames,
+		gatewayName:       gatewayName,
+		statusUpdater:     sh.Writer(),
 	}
 	if err := s.mgr.Add(lbsw); err != nil {
 		return err
@@ -718,32 +724,10 @@ func (s *Server) setupGatewayAPI(contourConfiguration contour_api_v1alpha1.Conto
 
 	// Check if GatewayAPI is configured.
 	if contourConfiguration.Gateway != nil {
-		// Create and register the gatewayclass controller with the manager.
-		gatewayClassControllerName := contourConfiguration.Gateway.ControllerName
-		gwClass, err := controller.RegisterGatewayClassController(
-			s.log.WithField("context", "gatewayclass-controller"),
-			mgr,
-			eventHandler,
-			sh.Writer(),
-			gatewayClassControllerName,
-		)
-		if err != nil {
-			s.log.WithError(err).Fatal("failed to create gatewayclass-controller")
+		// Inform on ReferencePolicies.
+		if err := informOnResource(&gatewayapi_v1alpha2.Gateway{}, eventHandler, mgr.GetCache()); err != nil {
+			s.log.WithError(err).WithField("resource", "gateways").Fatal("failed to create informer")
 		}
-		needLeadershipNotification = append(needLeadershipNotification, gwClass)
-
-		// Create and register the NewGatewayController controller with the manager.
-		gw, err := controller.RegisterGatewayController(
-			s.log.WithField("context", "gateway-controller"),
-			mgr,
-			eventHandler,
-			sh.Writer(),
-			gatewayClassControllerName,
-		)
-		if err != nil {
-			s.log.WithError(err).Fatal("failed to create gateway-controller")
-		}
-		needLeadershipNotification = append(needLeadershipNotification, gw)
 
 		// Create and register the HTTPRoute controller with the manager.
 		if err := controller.RegisterHTTPRouteController(s.log.WithField("context", "httproute-controller"), mgr, eventHandler); err != nil {
@@ -771,7 +755,7 @@ func (s *Server) setupGatewayAPI(contourConfiguration contour_api_v1alpha1.Conto
 type dagBuilderConfig struct {
 	ingressClassNames         []string
 	rootNamespaces            []string
-	gatewayAPIConfigured      bool
+	gateway                   *types.NamespacedName
 	disablePermitInsecure     bool
 	enableExternalNameService bool
 	dnsLookupFamily           contour_api_v1alpha1.ClusterDNSFamilyType
@@ -854,7 +838,7 @@ func (s *Server) getDAGBuilder(dbc dagBuilderConfig) *dag.Builder {
 		},
 	}
 
-	if dbc.gatewayAPIConfigured {
+	if dbc.gateway != nil {
 		dagProcessors = append(dagProcessors, &dag.GatewayAPIProcessor{
 			EnableExternalNameService: dbc.enableExternalNameService,
 			FieldLogger:               s.log.WithField("context", "GatewayAPIProcessor"),
@@ -881,6 +865,10 @@ func (s *Server) getDAGBuilder(dbc dagBuilderConfig) *dag.Builder {
 			FieldLogger:          s.log.WithField("context", "KubernetesCache"),
 		},
 		Processors: dagProcessors,
+	}
+
+	if dbc.gateway != nil {
+		builder.Source.Gateway = *dbc.gateway
 	}
 
 	// govet complains about copying the sync.Once that's in the dag.KubernetesCache

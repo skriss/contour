@@ -13,3 +13,19 @@ spec:
       allowedRoutes:
         namespaces:
           from: All
+---
+---
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1alpha2
+metadata:
+  name: contour-not-controller
+  namespace: projectcontour
+spec:
+  gatewayClassName: example-not-controlled
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+      allowedRoutes:
+        namespaces:
+          from: All

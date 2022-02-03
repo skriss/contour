@@ -45,22 +45,14 @@ func (s ServerType) Validate() error {
 
 // Validate the GatewayConfig.
 func (g *GatewayParameters) Validate() error {
-
-	var errorString string
 	if g == nil {
 		return nil
 	}
 
-	if len(g.ControllerName) == 0 {
-		if len(errorString) > 0 {
-			errorString += ","
-		}
-		errorString = strings.TrimSpace(fmt.Sprintf("%s controllerName required", errorString))
+	if len(g.GatewayName) == 0 {
+		return fmt.Errorf("invalid Gateway parameters specified: gateway name required")
 	}
 
-	if len(errorString) > 0 {
-		return fmt.Errorf("invalid Gateway parameters specified: %s", errorString)
-	}
 	return nil
 }
 
@@ -351,10 +343,7 @@ type ServerParameters struct {
 
 // GatewayParameters holds the configuration for Gateway API controllers.
 type GatewayParameters struct {
-	// ControllerName is used to determine whether Contour should reconcile a
-	// GatewayClass. The string takes the form of "projectcontour.io/<namespace>/contour".
-	// If unset, the gatewayclass controller will not be started.
-	ControllerName string `yaml:"controllerName,omitempty"`
+	GatewayName string `yaml:"gatewayName,omitempty"`
 }
 
 // LeaderElectionParameters holds the config bits for leader election

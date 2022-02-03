@@ -80,10 +80,6 @@ func (p *GatewayAPIProcessor) Run(dag *DAG, source *KubernetesCache) {
 		p.Info("Gateway not found in cache.")
 		return
 	}
-	if p.source.gatewayclass == nil {
-		p.Info("Gatewayclass not found in cache.")
-		return
-	}
 
 	gwAccessor, commit := p.dag.StatusCache.GatewayStatusAccessor(
 		k8s.NamespacedNameOf(p.source.gateway),
