@@ -405,6 +405,7 @@ func (s *Server) doServe() error {
 		headersPolicy:             contourConfiguration.Policy,
 		clientCert:                clientCert,
 		fallbackCert:              fallbackCert,
+		client:                    s.mgr.GetClient(),
 	})
 
 	// Build the core Kubernetes event handler.
@@ -724,7 +725,12 @@ func (s *Server) setupGatewayAPI(contourConfiguration contour_api_v1alpha1.Conto
 
 	// Check if GatewayAPI is configured.
 	if contourConfiguration.Gateway != nil {
-		// Inform on ReferencePolicies.
+		// Inform on GatewayClasses.
+		if err := informOnResource(&gatewayapi_v1alpha2.GatewayClass{}, eventHandler, mgr.GetCache()); err != nil {
+			s.log.WithError(err).WithField("resource", "gatewayclasses").Fatal("failed to create informer")
+		}
+
+		// Inform on Gateways.
 		if err := informOnResource(&gatewayapi_v1alpha2.Gateway{}, eventHandler, mgr.GetCache()); err != nil {
 			s.log.WithError(err).WithField("resource", "gateways").Fatal("failed to create informer")
 		}
@@ -762,6 +768,7 @@ type dagBuilderConfig struct {
 	headersPolicy             *contour_api_v1alpha1.PolicyConfig
 	clientCert                *types.NamespacedName
 	fallbackCert              *types.NamespacedName
+	client                    client.Client
 }
 
 func (s *Server) getDAGBuilder(dbc dagBuilderConfig) *dag.Builder {
@@ -863,6 +870,7 @@ func (s *Server) getDAGBuilder(dbc dagBuilderConfig) *dag.Builder {
 			IngressClassNames:    dbc.ingressClassNames,
 			ConfiguredSecretRefs: configuredSecretRefs,
 			FieldLogger:          s.log.WithField("context", "KubernetesCache"),
+			Client:               dbc.client,
 		},
 		Processors: dagProcessors,
 	}

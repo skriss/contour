@@ -14,6 +14,7 @@
 package dag
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"sync"
@@ -31,6 +32,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/pointer"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	gatewayapi_v1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 )
 
@@ -58,11 +60,14 @@ type KubernetesCache struct {
 	tlscertificatedelegations map[types.NamespacedName]*contour_api_v1.TLSCertificateDelegation
 	services                  map[types.NamespacedName]*v1.Service
 	namespaces                map[string]*v1.Namespace
+	gatewayclass              *gatewayapi_v1alpha2.GatewayClass
 	gateway                   *gatewayapi_v1alpha2.Gateway
 	httproutes                map[types.NamespacedName]*gatewayapi_v1alpha2.HTTPRoute
 	tlsroutes                 map[types.NamespacedName]*gatewayapi_v1alpha2.TLSRoute
 	referencepolicies         map[types.NamespacedName]*gatewayapi_v1alpha2.ReferencePolicy
 	extensions                map[types.NamespacedName]*contour_api_v1alpha1.ExtensionService
+
+	Client client.Client
 
 	initialize sync.Once
 
@@ -146,12 +151,27 @@ func (kc *KubernetesCache) Insert(obj interface{}) bool {
 		case *contour_api_v1.TLSCertificateDelegation:
 			kc.tlscertificatedelegations[k8s.NamespacedNameOf(obj)] = obj
 			return true
+		case *gatewayapi_v1alpha2.GatewayClass:
+			if kc.gateway == nil || obj.Name != string(kc.gateway.Spec.GatewayClassName) {
+				return false
+			}
+
+			kc.gatewayclass = obj
+			return true
 		case *gatewayapi_v1alpha2.Gateway:
 			if k8s.NamespacedNameOf(obj) != kc.Gateway {
 				return false
 			}
 
 			kc.gateway = obj
+
+			gatewayClass := &gatewayapi_v1alpha2.GatewayClass{}
+			if err := kc.Client.Get(context.Background(), client.ObjectKey{Name: string(kc.gateway.Spec.GatewayClassName)}, gatewayClass); err != nil {
+				kc.WithError(err).Errorf("error getting gatewayclass for gateway %s/%s", kc.gateway.Namespace, kc.gateway.Name)
+			} else {
+				kc.gatewayclass = gatewayClass
+			}
+
 			return true
 		case *gatewayapi_v1alpha2.HTTPRoute:
 			kc.httproutes[k8s.NamespacedNameOf(obj)] = obj
