@@ -32,7 +32,7 @@ cat > "${REPO}/examples/gateway-provisioner/01-roles.yaml" <<EOF
 EOF
 
 go run sigs.k8s.io/controller-tools/cmd/controller-gen \
-    rbac:roleName=contour-gateway-provisioner \
+    rbac:roleName=envoy-gateway-provisioner \
     output:stdout \
     paths="./internal/provisioner/rbac;./internal/k8s" \
 >> "${REPO}/examples/gateway-provisioner/01-roles.yaml"

@@ -19,12 +19,12 @@ import (
 
 // ContourConfigurationName returns the name of the ContourConfiguration resource.
 func (c *Contour) ContourConfigurationName() string {
-	return "contourconfig-" + c.Name
+	return "controlplane-" + c.Name
 }
 
 // ContourServiceName returns the name of the Contour Service resource.
 func (c *Contour) ContourServiceName() string {
-	return "contour-" + c.Name
+	return "controlplane-" + c.Name
 }
 
 // EnvoyServiceName returns the name of the Envoy Service resource.
@@ -34,7 +34,7 @@ func (c *Contour) EnvoyServiceName() string {
 
 // ContourDeploymentName returns the name of the Contour Deployment resource.
 func (c *Contour) ContourDeploymentName() string {
-	return "contour-" + c.Name
+	return "controlplane-" + c.Name
 }
 
 // EnvoyDataPlaneName returns the name of the Envoy data plane (DaemonSet or Deployment) resource.
@@ -61,13 +61,13 @@ func (c *Contour) EnvoyCertsSecretName() string {
 // the Contour deployment.
 func (c *Contour) ContourRBACNames() RBACNames {
 	return RBACNames{
-		ServiceAccount:     fmt.Sprintf("contour-%s", c.Name),
-		ClusterRole:        fmt.Sprintf("contour-%s-%s", c.Namespace, c.Name),
-		ClusterRoleBinding: fmt.Sprintf("contour-%s-%s", c.Namespace, c.Name),
-		Role:               fmt.Sprintf("contour-%s", c.Name),
+		ServiceAccount:     fmt.Sprintf("controlplane-%s", c.Name),
+		ClusterRole:        fmt.Sprintf("controlplane-%s-%s", c.Namespace, c.Name),
+		ClusterRoleBinding: fmt.Sprintf("controlplane-%s-%s", c.Namespace, c.Name),
+		Role:               fmt.Sprintf("controlplane-%s", c.Name),
 
 		// this one has a different prefix to differentiate from the certgen role binding (see below).
-		RoleBinding: fmt.Sprintf("contour-rolebinding-%s", c.Name),
+		RoleBinding: fmt.Sprintf("controlplane-rolebinding-%s", c.Name),
 	}
 }
 

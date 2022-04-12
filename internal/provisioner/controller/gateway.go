@@ -348,7 +348,7 @@ func (r *gatewayReconciler) ensureContour(ctx context.Context, contour *model.Co
 	handleResult("xDS TLS secrets", secret.EnsureXDSSecrets(ctx, r.client, contour, r.contourImage))
 	handleResult("deployment", deployment.EnsureDeployment(ctx, r.client, contour, r.contourImage))
 	handleResult("envoy data plane", dataplane.EnsureDataPlane(ctx, r.client, contour, r.contourImage, r.envoyImage))
-	handleResult("contour service", service.EnsureContourService(ctx, r.client, contour))
+	handleResult("control plane service", service.EnsureContourService(ctx, r.client, contour))
 
 	switch contour.Spec.NetworkPublishing.Envoy.Type {
 	case model.LoadBalancerServicePublishingType, model.NodePortServicePublishingType, model.ClusterIPServicePublishingType:
@@ -370,7 +370,7 @@ func (r *gatewayReconciler) ensureContourDeleted(ctx context.Context, contour *m
 	}
 
 	handleResult("envoy service", service.EnsureEnvoyServiceDeleted(ctx, r.client, contour))
-	handleResult("service", service.EnsureContourServiceDeleted(ctx, r.client, contour))
+	handleResult("control plane service", service.EnsureContourServiceDeleted(ctx, r.client, contour))
 	handleResult("envoy data plane", dataplane.EnsureDataPlaneDeleted(ctx, r.client, contour))
 	handleResult("deployment", deployment.EnsureDeploymentDeleted(ctx, r.client, contour))
 	handleResult("xDS TLS Secrets", secret.EnsureXDSSecretsDeleted(ctx, r.client, contour))

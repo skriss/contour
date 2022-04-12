@@ -4903,7 +4903,7 @@ kind: Role
 metadata:
   creationTimestamp: null
   name: contour
-  namespace: projectcontour
+  namespace: envoy-gateway-system
 rules:
 - apiGroups:
   - ""

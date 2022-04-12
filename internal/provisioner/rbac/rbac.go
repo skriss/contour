@@ -32,8 +32,8 @@ package rbac
 // ---
 
 // RBAC for leader election for the provisioner.
-// +kubebuilder:rbac:groups="",resources=events,verbs=create;get;update,namespace=projectcontour
-// +kubebuilder:rbac:groups="coordination.k8s.io",resources=leases,verbs=create;get;update,namespace=projectcontour
+// +kubebuilder:rbac:groups="",resources=events,verbs=create;get;update,namespace=envoy-gateway-system
+// +kubebuilder:rbac:groups="coordination.k8s.io",resources=leases,verbs=create;get;update,namespace=envoy-gateway-system
 // ---
 
 // Contour itself has leader election RBAC scoped to a single namespace, but the provisioner

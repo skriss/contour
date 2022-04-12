@@ -36,8 +36,8 @@ func registerGatewayProvisioner(app *kingpin.Application) (*kingpin.CmdClause, *
 		envoyImage:            "docker.io/envoyproxy/envoy:v1.22.0",
 		metricsBindAddress:    ":8080",
 		leaderElection:        false,
-		leaderElectionID:      "0d879e31.projectcontour.io",
-		gatewayControllerName: "projectcontour.io/gateway-controller",
+		leaderElectionID:      "0d879e31.envoyproxy.io",
+		gatewayControllerName: "envoyproxy.io/gateway-controller",
 	}
 
 	cmd.Flag("contour-image", "The container image used for the managed Contour.").
