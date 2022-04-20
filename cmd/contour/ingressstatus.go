@@ -18,11 +18,9 @@ import (
 	"net"
 	"strings"
 
-	contour_api_v1 "github.com/projectcontour/contour/apis/projectcontour/v1"
 	"github.com/projectcontour/contour/internal/k8s"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
-	networking_v1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -82,10 +80,7 @@ func (isw *loadBalancerStatusWriter) Start(ctx context.Context) error {
 	// Create informers for the types that need load balancer
 	// address status. The cache should have already started
 	// informers, so new informers will auto-start.
-	resources := []client.Object{
-		&contour_api_v1.HTTPProxy{},
-		&networking_v1.Ingress{},
-	}
+	resources := []client.Object{}
 
 	// Only create Gateway informer if a controller or specific gateway was provided,
 	// otherwise the API may not exist in the cluster.
@@ -116,24 +111,6 @@ func (isw *loadBalancerStatusWriter) Start(ctx context.Context) error {
 				Info("received a new address for status.loadBalancer")
 
 			u.Set(lbs)
-
-			var ingressList networking_v1.IngressList
-			if err := isw.cache.List(context.Background(), &ingressList); err != nil {
-				isw.log.WithError(err).WithField("kind", "Ingress").Error("failed to list objects")
-			} else {
-				for i := range ingressList.Items {
-					u.OnAdd(&ingressList.Items[i])
-				}
-			}
-
-			var proxyList contour_api_v1.HTTPProxyList
-			if err := isw.cache.List(context.Background(), &proxyList); err != nil {
-				isw.log.WithError(err).WithField("kind", "HTTPProxy").Error("failed to list objects")
-			} else {
-				for i := range proxyList.Items {
-					u.OnAdd(&proxyList.Items[i])
-				}
-			}
 
 			// Only list Gateways if a controller or specific gateway was configured,
 			// otherwise the API may not exist in the cluster.

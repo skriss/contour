@@ -61,15 +61,6 @@ func NewGatewayClassController(mgr manager.Manager, gatewayController string) (c
 		return nil, err
 	}
 
-	// Watch ContourDeployments since they can be used as parameters for
-	// GatewayClasses.
-	if err := c.Watch(
-		&source.Kind{Type: &contour_api_v1alpha1.ContourDeployment{}},
-		handler.EnqueueRequestsFromMapFunc(r.mapContourDeploymentToGatewayClasses),
-	); err != nil {
-		return nil, err
-	}
-
 	return c, nil
 }
 
