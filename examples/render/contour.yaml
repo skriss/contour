@@ -201,23 +201,23 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.6.2
   creationTimestamp: null
-  name: contourconfigurations.projectcontour.io
+  name: envoygatewayconfigurations.gateway.envoyproxy.io
 spec:
-  preserveUnknownFields: false
-  group: projectcontour.io
+  group: gateway.envoyproxy.io
   names:
-    kind: ContourConfiguration
-    listKind: ContourConfigurationList
-    plural: contourconfigurations
+    kind: EnvoyGatewayConfiguration
+    listKind: EnvoyGatewayConfigurationList
+    plural: envoygatewayconfigurations
     shortNames:
-    - contourconfig
-    singular: contourconfiguration
+    - envoygatewayconfig
+    singular: envoygatewayconfiguration
   scope: Namespaced
   versions:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: ContourConfiguration is the schema for a Contour instance.
+        description: EnvoyGatewayConfiguration is the schema for an Envoy Gateway
+          instance.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -232,9 +232,10 @@ spec:
           metadata:
             type: object
           spec:
-            description: ContourConfigurationSpec represents a configuration of a
-              Contour controller. It contains most of all the options that can be
-              customized, the other remaining options being command line flags.
+            description: EnvoyGatewayConfigurationSpec represents a configuration
+              of an Envoy Gateway controller. It contains most of all the options
+              that can be customized, the other remaining options being command line
+              flags.
             properties:
               debug:
                 description: Debug contains parameters to enable debug logging and
@@ -813,8 +814,8 @@ spec:
                 type: object
             type: object
           status:
-            description: ContourConfigurationStatus defines the observed state of
-              a ContourConfiguration resource.
+            description: EnvoyGatewayConfigurationStatus defines the observed state
+              of a ContourConfiguration resource.
             properties:
               conditions:
                 description: "Conditions contains the current status of the Contour
@@ -914,23 +915,22 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.6.2
   creationTimestamp: null
-  name: contourdeployments.projectcontour.io
+  name: envoygatewaydeployments.gateway.envoyproxy.io
 spec:
-  preserveUnknownFields: false
-  group: projectcontour.io
+  group: gateway.envoyproxy.io
   names:
-    kind: ContourDeployment
-    listKind: ContourDeploymentList
-    plural: contourdeployments
+    kind: EnvoyGatewayDeployment
+    listKind: EnvoyGatewayDeploymentList
+    plural: envoygatewaydeployments
     shortNames:
     - contourdeploy
-    singular: contourdeployment
+    singular: envoygatewaydeployment
   scope: Namespaced
   versions:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: ContourDeployment is the schema for a Contour Deployment.
+        description: EnvoyGatewayDeployment is the schema for a Contour Deployment.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -945,14 +945,14 @@ spec:
           metadata:
             type: object
           spec:
-            description: ContourDeploymentSpec specifies options for how a Contour
+            description: EnvoyGatewayDeploymentSpec specifies options for how a Contour
               instance should be provisioned.
             properties:
-              contour:
-                description: Contour specifies deployment-time settings for the Contour
-                  part of the installation, i.e. the xDS server/control plane and
-                  associated resources, including things like replica count for the
-                  Deployment, and node placement constraints for the pods.
+              controlPlane:
+                description: ControlPlane specifies deployment-time settings for the
+                  ControlPlane part of the installation, i.e. the xDS server/control
+                  plane and associated resources, including things like replica count
+                  for the Deployment, and node placement constraints for the pods.
                 properties:
                   nodePlacement:
                     description: NodePlacement describes node scheduling configuration
@@ -1023,12 +1023,12 @@ spec:
                     minimum: 0
                     type: integer
                 type: object
-              envoy:
-                description: Envoy specifies deployment-time settings for the Envoy
-                  part of the installation, i.e. the xDS client/data plane and associated
-                  resources, including things like the workload type to use (DaemonSet
-                  or Deployment), node placement constraints for the pods, and various
-                  options for the Envoy service.
+              dataPlane:
+                description: DataPlane specifies deployment-time settings for the
+                  DataPlane part of the installation, i.e. the xDS client/data plane
+                  and associated resources, including things like the workload type
+                  to use (DaemonSet or Deployment), node placement constraints for
+                  the pods, and various options for the DataPlane service.
                 properties:
                   networkPublishing:
                     description: NetworkPublishing defines how to expose Envoy to
@@ -1727,8 +1727,8 @@ spec:
                 type: object
             type: object
           status:
-            description: ContourDeploymentStatus defines the observed state of a ContourDeployment
-              resource.
+            description: EnvoyGatewayDeploymentStatus defines the observed state of
+              a ContourDeployment resource.
             properties:
               conditions:
                 description: Conditions describe the current conditions of the ContourDeployment
@@ -1942,6 +1942,22 @@ rules:
   - list
   - watch
 - apiGroups:
+  - gateway.envoyproxy.io
+  resources:
+  - envoygatewayconfigurations
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - gateway.envoyproxy.io
+  resources:
+  - envoygatewayconfigurations/status
+  verbs:
+  - create
+  - get
+  - update
+- apiGroups:
   - gateway.networking.k8s.io
   resources:
   - gatewayclasses
@@ -1974,27 +1990,6 @@ rules:
   - networking.k8s.io
   resources:
   - ingresses/status
-  verbs:
-  - create
-  - get
-  - update
-- apiGroups:
-  - projectcontour.io
-  resources:
-  - contourconfigurations
-  - extensionservices
-  - httpproxies
-  - tlscertificatedelegations
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - projectcontour.io
-  resources:
-  - contourconfigurations/status
-  - extensionservices/status
-  - httpproxies/status
   verbs:
   - create
   - get

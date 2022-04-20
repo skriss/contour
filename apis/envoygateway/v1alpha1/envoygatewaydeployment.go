@@ -18,37 +18,37 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// ContourDeploymentSpec specifies options for how a Contour
+// EnvoyGatewayDeploymentSpec specifies options for how a Contour
 // instance should be provisioned.
-type ContourDeploymentSpec struct {
-	// Contour specifies deployment-time settings for the Contour
+type EnvoyGatewayDeploymentSpec struct {
+	// ControlPlane specifies deployment-time settings for the ControlPlane
 	// part of the installation, i.e. the xDS server/control plane
 	// and associated resources, including things like replica count
 	// for the Deployment, and node placement constraints for the pods.
 	//
 	// +optional
-	Contour *ContourSettings `json:"contour,omitempty"`
+	ControlPlane *ControlPlaneSettings `json:"controlPlane,omitempty"`
 
-	// Envoy specifies deployment-time settings for the Envoy
+	// DataPlane specifies deployment-time settings for the DataPlane
 	// part of the installation, i.e. the xDS client/data plane
 	// and associated resources, including things like the workload
 	// type to use (DaemonSet or Deployment), node placement constraints
-	// for the pods, and various options for the Envoy service.
+	// for the pods, and various options for the DataPlane service.
 	//
 	// +optional
-	Envoy *EnvoySettings `json:"envoy,omitempty"`
+	DataPlane *DataPlaneSettings `json:"dataPlane,omitempty"`
 
 	// RuntimeSettings is a ContourConfiguration spec to be used when
 	// provisioning a Contour instance that will influence aspects of
 	// the Contour instance's runtime behavior.
 	//
 	// +optional
-	RuntimeSettings *ContourConfigurationSpec `json:"runtimeSettings,omitempty"`
+	RuntimeSettings *EnvoyGatewayConfigurationSpec `json:"runtimeSettings,omitempty"`
 }
 
-// ContourSettings contains settings for the Contour part of the installation,
+// ControlPlaneSettings contains settings for the Contour part of the installation,
 // i.e. the xDS server/control plane and associated resources.
-type ContourSettings struct {
+type ControlPlaneSettings struct {
 	// Replicas is the desired number of Contour replicas. If unset,
 	// defaults to 2.
 	//
@@ -61,9 +61,9 @@ type ContourSettings struct {
 	NodePlacement *NodePlacement `json:"nodePlacement,omitempty"`
 }
 
-// EnvoySettings contains settings for the Envoy part of the installation,
+// DataPlaneSettings contains settings for the Envoy part of the installation,
 // i.e. the xDS client/data plane and associated resources.
-type EnvoySettings struct {
+type DataPlaneSettings struct {
 	// WorkloadType is the type of workload to install Envoy
 	// as. Choices are DaemonSet and Deployment. If unset, defaults
 	// to DaemonSet.
@@ -187,8 +187,8 @@ type NodePlacement struct {
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
 }
 
-// ContourDeploymentStatus defines the observed state of a ContourDeployment resource.
-type ContourDeploymentStatus struct {
+// EnvoyGatewayDeploymentStatus defines the observed state of a ContourDeployment resource.
+type EnvoyGatewayDeploymentStatus struct {
 	// Conditions describe the current conditions of the ContourDeployment resource.
 	//
 	// +optional
@@ -204,21 +204,21 @@ type ContourDeploymentStatus struct {
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:scope=Namespaced,shortName=contourdeploy
 
-// ContourDeployment is the schema for a Contour Deployment.
-type ContourDeployment struct {
+// EnvoyGatewayDeployment is the schema for a Contour Deployment.
+type EnvoyGatewayDeployment struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   ContourDeploymentSpec   `json:"spec,omitempty"`
-	Status ContourDeploymentStatus `json:"status,omitempty"`
+	Spec   EnvoyGatewayDeploymentSpec   `json:"spec,omitempty"`
+	Status EnvoyGatewayDeploymentStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// ContourDeploymentList contains a list of Contour Deployment resources.
-type ContourDeploymentList struct {
+// EnvoyGatewayDeploymentList contains a list of Contour Deployment resources.
+type EnvoyGatewayDeploymentList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []ContourDeployment `json:"items"`
+	Items           []EnvoyGatewayDeployment `json:"items"`
 }

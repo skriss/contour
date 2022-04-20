@@ -11,12 +11,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package contourconfig
+package envoygatewayconfig
 
 import (
 	"context"
 
-	contour_api_v1alpha1 "github.com/projectcontour/contour/apis/projectcontour/v1alpha1"
+	envoygateway_api_v1alpha1 "github.com/projectcontour/contour/apis/envoygateway/v1alpha1"
 	"github.com/projectcontour/contour/internal/provisioner/labels"
 	"github.com/projectcontour/contour/internal/provisioner/model"
 
@@ -27,8 +27,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// EnsureContourConfig ensures that a ContourConfiguration exists for the given contour.
-func EnsureContourConfig(ctx context.Context, cli client.Client, contour *model.Contour) error {
+// EnsureEnvoyGatewayConfig ensures that an EnvoyGatewayConfiguration exists for the given contour.
+func EnsureEnvoyGatewayConfig(ctx context.Context, cli client.Client, contour *model.Contour) error {
 	current, err := current(ctx, cli, contour)
 
 	switch {
@@ -37,7 +37,7 @@ func EnsureContourConfig(ctx context.Context, cli client.Client, contour *model.
 		return err
 	// ContourConfiguration not found: create it
 	case errors.IsNotFound(err):
-		contourConfig := &contour_api_v1alpha1.ContourConfiguration{
+		contourConfig := &envoygateway_api_v1alpha1.EnvoyGatewayConfiguration{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: contour.Namespace,
 				Name:      contour.ContourConfigurationName(),
@@ -69,25 +69,25 @@ func EnsureContourConfig(ctx context.Context, cli client.Client, contour *model.
 	}
 }
 
-func setGatewayConfig(config *contour_api_v1alpha1.ContourConfiguration, contour *model.Contour) {
-	config.Spec.Gateway = &contour_api_v1alpha1.GatewayConfig{
-		GatewayRef: &contour_api_v1alpha1.NamespacedName{
+func setGatewayConfig(config *envoygateway_api_v1alpha1.EnvoyGatewayConfiguration, contour *model.Contour) {
+	config.Spec.Gateway = &envoygateway_api_v1alpha1.GatewayConfig{
+		GatewayRef: &envoygateway_api_v1alpha1.NamespacedName{
 			Namespace: contour.Namespace,
 			Name:      contour.Name,
 		},
 	}
 
 	if config.Spec.Envoy == nil {
-		config.Spec.Envoy = &contour_api_v1alpha1.EnvoyConfig{}
+		config.Spec.Envoy = &envoygateway_api_v1alpha1.EnvoyConfig{}
 	}
-	config.Spec.Envoy.Service = &contour_api_v1alpha1.NamespacedName{
+	config.Spec.Envoy.Service = &envoygateway_api_v1alpha1.NamespacedName{
 		Namespace: contour.Namespace,
 		Name:      contour.EnvoyServiceName(),
 	}
 }
 
-// EnsureContourConfigDeleted deletes a ContourConfig for the provided contour, if the configured owner labels exist.
-func EnsureContourConfigDeleted(ctx context.Context, cli client.Client, contour *model.Contour) error {
+// EnsureEnvoyGatewayConfigDeleted deletes an EnvoyGatewayConfiguration for the provided contour, if the configured owner labels exist.
+func EnsureEnvoyGatewayConfigDeleted(ctx context.Context, cli client.Client, contour *model.Contour) error {
 	current, err := current(ctx, cli, contour)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -108,9 +108,9 @@ func EnsureContourConfigDeleted(ctx context.Context, cli client.Client, contour 
 	return nil
 }
 
-// current gets the ContourConfiguration for the provided contour from the api server.
-func current(ctx context.Context, cli client.Client, contour *model.Contour) (*contour_api_v1alpha1.ContourConfiguration, error) {
-	current := &contour_api_v1alpha1.ContourConfiguration{}
+// current gets the EnvoyGatewayConfiguration for the provided contour from the api server.
+func current(ctx context.Context, cli client.Client, contour *model.Contour) (*envoygateway_api_v1alpha1.EnvoyGatewayConfiguration, error) {
+	current := &envoygateway_api_v1alpha1.EnvoyGatewayConfiguration{}
 	key := types.NamespacedName{
 		Namespace: contour.Namespace,
 		Name:      contour.ContourConfigurationName(),

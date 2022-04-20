@@ -18,7 +18,7 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	gateway_api_v1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
-	contour_api_v1alpha1 "github.com/projectcontour/contour/apis/projectcontour/v1alpha1"
+	envoygateway_api_v1alpha1 "github.com/projectcontour/contour/apis/envoygateway/v1alpha1"
 )
 
 // CreateScheme returns a scheme with all the API types necessary for the gateway
@@ -32,7 +32,7 @@ func CreateScheme() (*runtime.Scheme, error) {
 	if err := gateway_api_v1alpha2.AddToScheme(scheme); err != nil {
 		return nil, err
 	}
-	if err := contour_api_v1alpha1.AddToScheme(scheme); err != nil {
+	if err := envoygateway_api_v1alpha1.AddToScheme(scheme); err != nil {
 		return nil, err
 	}
 

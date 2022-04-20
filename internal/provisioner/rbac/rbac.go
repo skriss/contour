@@ -21,13 +21,13 @@ package rbac
 // RBAC for Gateway API.
 // +kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=gatewayclasses;gateways,verbs=get;list;watch
 // +kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=gatewayclasses/status;gateways/status,verbs=update
-// +kubebuilder:rbac:groups=projectcontour.io,resources=contourdeployments,verbs=get;list;watch
+// +kubebuilder:rbac:groups=gateway.envoyproxy.io,resources=envoygatewaydeployments,verbs=get;list;watch
 // ---
 
 // RBAC for core Contour resources to be provisioned.
 // +kubebuilder:rbac:groups="",resources=secrets;services;serviceaccounts,verbs=get;list;watch;create;update;delete
 // +kubebuilder:rbac:groups=apps,resources=deployments;daemonsets,verbs=get;list;watch;create;update;delete
-// +kubebuilder:rbac:groups=projectcontour.io,resources=contourconfigurations,verbs=get;list;watch;create;update;delete
+// +kubebuilder:rbac:groups=gateway.envoyproxy.io,resources=envoygatewayconfigurations,verbs=get;list;watch;create;update;delete
 // +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterroles;clusterrolebindings;roles;rolebindings,verbs=get;list;watch;create;update;delete
 // ---
 

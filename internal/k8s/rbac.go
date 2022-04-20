@@ -16,8 +16,8 @@ package k8s
 // +kubebuilder:rbac:groups="networking.k8s.io",resources=ingresses,verbs=get;list;watch
 // +kubebuilder:rbac:groups="networking.k8s.io",resources=ingresses/status,verbs=create;get;update
 
-// +kubebuilder:rbac:groups="projectcontour.io",resources=httpproxies;tlscertificatedelegations;extensionservices;contourconfigurations,verbs=get;list;watch
-// +kubebuilder:rbac:groups="projectcontour.io",resources=httpproxies/status;extensionservices/status;contourconfigurations/status,verbs=create;get;update
+// +kubebuilder:rbac:groups="gateway.envoyproxy.io",resources=envoygatewayconfigurations,verbs=get;list;watch
+// +kubebuilder:rbac:groups="gateway.envoyproxy.io",resources=envoygatewayconfigurations/status,verbs=create;get;update
 
 // +kubebuilder:rbac:groups="gateway.networking.k8s.io",resources=gatewayclasses;gateways;httproutes;tlsroutes;referencepolicies,verbs=get;list;watch
 // +kubebuilder:rbac:groups="gateway.networking.k8s.io",resources=gatewayclasses/status;gateways/status;httproutes/status;tlsroutes/status,verbs=update

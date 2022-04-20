@@ -21,6 +21,22 @@ rules:
   - list
   - watch
 - apiGroups:
+  - gateway.envoyproxy.io
+  resources:
+  - envoygatewayconfigurations
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - gateway.envoyproxy.io
+  resources:
+  - envoygatewayconfigurations/status
+  verbs:
+  - create
+  - get
+  - update
+- apiGroups:
   - gateway.networking.k8s.io
   resources:
   - gatewayclasses
@@ -53,27 +69,6 @@ rules:
   - networking.k8s.io
   resources:
   - ingresses/status
-  verbs:
-  - create
-  - get
-  - update
-- apiGroups:
-  - projectcontour.io
-  resources:
-  - contourconfigurations
-  - extensionservices
-  - httpproxies
-  - tlscertificatedelegations
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - projectcontour.io
-  resources:
-  - contourconfigurations/status
-  - extensionservices/status
-  - httpproxies/status
   verbs:
   - create
   - get

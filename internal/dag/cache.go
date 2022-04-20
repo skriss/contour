@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"sync"
 
-	contour_api_v1alpha1 "github.com/projectcontour/contour/apis/projectcontour/v1alpha1"
+	envoygateway_api_v1alpha1 "github.com/projectcontour/contour/apis/envoygateway/v1alpha1"
 	"github.com/projectcontour/contour/internal/annotation"
 	"github.com/projectcontour/contour/internal/k8s"
 	"github.com/sirupsen/logrus"
@@ -156,7 +156,7 @@ func (kc *KubernetesCache) Insert(obj interface{}) bool {
 		case *gatewayapi_v1alpha2.ReferencePolicy:
 			kc.referencepolicies[k8s.NamespacedNameOf(obj)] = obj
 			return true
-		case *contour_api_v1alpha1.ContourConfiguration:
+		case *envoygateway_api_v1alpha1.EnvoyGatewayConfiguration:
 			return false
 		default:
 			// not an interesting object
@@ -264,7 +264,7 @@ func (kc *KubernetesCache) remove(obj interface{}) bool {
 		_, ok := kc.referencepolicies[m]
 		delete(kc.referencepolicies, m)
 		return ok
-	case *contour_api_v1alpha1.ContourConfiguration:
+	case *envoygateway_api_v1alpha1.EnvoyGatewayConfiguration:
 		return false
 	default:
 		// not interesting

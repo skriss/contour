@@ -18,12 +18,12 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	contour_api_v1alpha1 "github.com/projectcontour/contour/apis/projectcontour/v1alpha1"
+	envoygateway_api_v1alpha1 "github.com/projectcontour/contour/apis/envoygateway/v1alpha1"
 	"github.com/projectcontour/contour/internal/gatewayapi"
 	"github.com/projectcontour/contour/internal/provisioner/model"
-	"github.com/projectcontour/contour/internal/provisioner/objects/contourconfig"
 	"github.com/projectcontour/contour/internal/provisioner/objects/dataplane"
 	"github.com/projectcontour/contour/internal/provisioner/objects/deployment"
+	"github.com/projectcontour/contour/internal/provisioner/objects/envoygatewayconfig"
 	"github.com/projectcontour/contour/internal/provisioner/objects/rbac"
 	"github.com/projectcontour/contour/internal/provisioner/objects/secret"
 	"github.com/projectcontour/contour/internal/provisioner/objects/service"
@@ -234,14 +234,14 @@ func (r *gatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		// ContourConfiguration
 		contourModel.Spec.RuntimeSettings = gatewayClassParams.Spec.RuntimeSettings
 
-		if gatewayClassParams.Spec.Contour != nil {
+		if gatewayClassParams.Spec.ControlPlane != nil {
 			// Deployment replicas
-			if gatewayClassParams.Spec.Contour.Replicas > 0 {
-				contourModel.Spec.ContourReplicas = gatewayClassParams.Spec.Contour.Replicas
+			if gatewayClassParams.Spec.ControlPlane.Replicas > 0 {
+				contourModel.Spec.ContourReplicas = gatewayClassParams.Spec.ControlPlane.Replicas
 			}
 
 			// Node placement
-			if nodePlacement := gatewayClassParams.Spec.Contour.NodePlacement; nodePlacement != nil {
+			if nodePlacement := gatewayClassParams.Spec.ControlPlane.NodePlacement; nodePlacement != nil {
 				if contourModel.Spec.NodePlacement == nil {
 					contourModel.Spec.NodePlacement = &model.NodePlacement{}
 				}
@@ -253,22 +253,22 @@ func (r *gatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 			}
 		}
 
-		if gatewayClassParams.Spec.Envoy != nil {
+		if gatewayClassParams.Spec.DataPlane != nil {
 			// Workload type
 			// Note, the values have already been validated by the gatewayclass controller
 			// so just check for the existence of a value here.
-			if gatewayClassParams.Spec.Envoy.WorkloadType != "" {
-				contourModel.Spec.EnvoyWorkloadType = gatewayClassParams.Spec.Envoy.WorkloadType
+			if gatewayClassParams.Spec.DataPlane.WorkloadType != "" {
+				contourModel.Spec.EnvoyWorkloadType = gatewayClassParams.Spec.DataPlane.WorkloadType
 			}
 
 			// Deployment replicas
-			if gatewayClassParams.Spec.Envoy.WorkloadType == contour_api_v1alpha1.WorkloadTypeDeployment &&
-				gatewayClassParams.Spec.Envoy.Replicas > 0 {
-				contourModel.Spec.EnvoyReplicas = gatewayClassParams.Spec.Envoy.Replicas
+			if gatewayClassParams.Spec.DataPlane.WorkloadType == envoygateway_api_v1alpha1.WorkloadTypeDeployment &&
+				gatewayClassParams.Spec.DataPlane.Replicas > 0 {
+				contourModel.Spec.EnvoyReplicas = gatewayClassParams.Spec.DataPlane.Replicas
 			}
 
 			// Network publishing
-			if networkPublishing := gatewayClassParams.Spec.Envoy.NetworkPublishing; networkPublishing != nil {
+			if networkPublishing := gatewayClassParams.Spec.DataPlane.NetworkPublishing; networkPublishing != nil {
 				// Note, the values have already been validated by the gatewayclass controller
 				// so just check for the existence of a value here.
 				if networkPublishing.Type != "" {
@@ -278,7 +278,7 @@ func (r *gatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 			}
 
 			// Node placement
-			if nodePlacement := gatewayClassParams.Spec.Envoy.NodePlacement; nodePlacement != nil {
+			if nodePlacement := gatewayClassParams.Spec.DataPlane.NodePlacement; nodePlacement != nil {
 				if contourModel.Spec.NodePlacement == nil {
 					contourModel.Spec.NodePlacement = &model.NodePlacement{}
 				}
@@ -344,7 +344,7 @@ func (r *gatewayReconciler) ensureContour(ctx context.Context, contour *model.Co
 		return errs
 	}
 
-	handleResult("contour config", contourconfig.EnsureContourConfig(ctx, r.client, contour))
+	handleResult("envoy gateway config", envoygatewayconfig.EnsureEnvoyGatewayConfig(ctx, r.client, contour))
 	handleResult("xDS TLS secrets", secret.EnsureXDSSecrets(ctx, r.client, contour, r.contourImage))
 	handleResult("deployment", deployment.EnsureDeployment(ctx, r.client, contour, r.contourImage))
 	handleResult("envoy data plane", dataplane.EnsureDataPlane(ctx, r.client, contour, r.contourImage, r.envoyImage))
@@ -374,13 +374,13 @@ func (r *gatewayReconciler) ensureContourDeleted(ctx context.Context, contour *m
 	handleResult("envoy data plane", dataplane.EnsureDataPlaneDeleted(ctx, r.client, contour))
 	handleResult("deployment", deployment.EnsureDeploymentDeleted(ctx, r.client, contour))
 	handleResult("xDS TLS Secrets", secret.EnsureXDSSecretsDeleted(ctx, r.client, contour))
-	handleResult("contour config", contourconfig.EnsureContourConfigDeleted(ctx, r.client, contour))
+	handleResult("envoy gateway config", envoygatewayconfig.EnsureEnvoyGatewayConfigDeleted(ctx, r.client, contour))
 	handleResult("rbac", rbac.EnsureRBACDeleted(ctx, r.client, contour))
 
 	return errs
 }
 
-func (r *gatewayReconciler) getGatewayClassParams(ctx context.Context, gatewayClass *gatewayapi_v1alpha2.GatewayClass) (*contour_api_v1alpha1.ContourDeployment, error) {
+func (r *gatewayReconciler) getGatewayClassParams(ctx context.Context, gatewayClass *gatewayapi_v1alpha2.GatewayClass) (*envoygateway_api_v1alpha1.EnvoyGatewayDeployment, error) {
 	// Check if there is a parametersRef to ContourDeployment with
 	// a namespace specified. Theoretically, we should only be reconciling
 	// Gateways for GatewayClasses that have valid parameter refs (or no refs),
@@ -394,7 +394,7 @@ func (r *gatewayReconciler) getGatewayClassParams(ctx context.Context, gatewayCl
 		return nil, nil
 	}
 
-	gcParams := &contour_api_v1alpha1.ContourDeployment{}
+	gcParams := &envoygateway_api_v1alpha1.EnvoyGatewayDeployment{}
 	key := client.ObjectKey{
 		Namespace: string(*gatewayClass.Spec.ParametersRef.Namespace),
 		Name:      gatewayClass.Spec.ParametersRef.Name,

@@ -25,14 +25,14 @@ import (
 	"time"
 
 	envoy_server_v3 "github.com/envoyproxy/go-control-plane/pkg/server/v3"
-	contour_api_v1alpha1 "github.com/projectcontour/contour/apis/projectcontour/v1alpha1"
+	envoygateway_api_v1alpha1 "github.com/projectcontour/contour/apis/envoygateway/v1alpha1"
 	"github.com/projectcontour/contour/internal/annotation"
 	"github.com/projectcontour/contour/internal/contour"
-	"github.com/projectcontour/contour/internal/contourconfig"
 	"github.com/projectcontour/contour/internal/controller"
 	"github.com/projectcontour/contour/internal/dag"
 	"github.com/projectcontour/contour/internal/debug"
 	envoy_v3 "github.com/projectcontour/contour/internal/envoy/v3"
+	"github.com/projectcontour/contour/internal/envoygatewayconfig"
 	"github.com/projectcontour/contour/internal/health"
 	"github.com/projectcontour/contour/internal/httpsvc"
 	"github.com/projectcontour/contour/internal/k8s"
@@ -230,8 +230,8 @@ func NewServer(log logrus.FieldLogger, ctx *serveContext) (*Server, error) {
 	}, nil
 }
 
-func (s *Server) getConfig() (contour_api_v1alpha1.ContourConfigurationSpec, error) {
-	var userConfig contour_api_v1alpha1.ContourConfigurationSpec
+func (s *Server) getConfig() (envoygateway_api_v1alpha1.EnvoyGatewayConfigurationSpec, error) {
+	var userConfig envoygateway_api_v1alpha1.EnvoyGatewayConfigurationSpec
 
 	// Get the ContourConfiguration CRD if specified
 	if len(s.ctx.contourConfigurationName) > 0 {
@@ -244,13 +244,13 @@ func (s *Server) getConfig() (contour_api_v1alpha1.ContourConfigurationSpec, err
 			contourNamespace = "projectcontour"
 		}
 
-		contourConfig := &contour_api_v1alpha1.ContourConfiguration{}
+		contourConfig := &envoygateway_api_v1alpha1.EnvoyGatewayConfiguration{}
 		key := client.ObjectKey{Namespace: contourNamespace, Name: s.ctx.contourConfigurationName}
 
 		// Using GetAPIReader() here because the manager's caches won't be started yet,
 		// so reads from the manager's client (which uses the caches for reads) will fail.
 		if err := s.mgr.GetAPIReader().Get(context.Background(), key, contourConfig); err != nil {
-			return contour_api_v1alpha1.ContourConfigurationSpec{}, fmt.Errorf("error getting contour configuration %s: %v", key, err)
+			return envoygateway_api_v1alpha1.EnvoyGatewayConfigurationSpec{}, fmt.Errorf("error getting contour configuration %s: %v", key, err)
 		}
 
 		// Copy the Spec from the parsed Configuration
@@ -262,13 +262,13 @@ func (s *Server) getConfig() (contour_api_v1alpha1.ContourConfigurationSpec, err
 
 	// Overlay the user-specified config onto the default config to come up
 	// with the final set of config to use.
-	contourConfiguration, err := contourconfig.OverlayOnDefaults(userConfig)
+	contourConfiguration, err := envoygatewayconfig.OverlayOnDefaults(userConfig)
 	if err != nil {
-		return contour_api_v1alpha1.ContourConfigurationSpec{}, err
+		return envoygateway_api_v1alpha1.EnvoyGatewayConfigurationSpec{}, err
 	}
 
 	if err := contourConfiguration.Validate(); err != nil {
-		return contour_api_v1alpha1.ContourConfigurationSpec{}, err
+		return envoygateway_api_v1alpha1.EnvoyGatewayConfigurationSpec{}, err
 	}
 
 	return contourConfiguration, nil
@@ -315,7 +315,7 @@ func (s *Server) doServe() error {
 		cipherSuites = append(cipherSuites, string(cs))
 	}
 
-	timeouts, err := contourconfig.ParseTimeoutPolicy(contourConfiguration.Envoy.Timeouts)
+	timeouts, err := envoygatewayconfig.ParseTimeoutPolicy(contourConfiguration.Envoy.Timeouts)
 	if err != nil {
 		return err
 	}
@@ -566,7 +566,7 @@ func (s *Server) doServe() error {
 	return s.mgr.Start(signals.SetupSignalHandler())
 }
 
-func (s *Server) setupDebugService(debugConfig contour_api_v1alpha1.DebugConfig, builder *dag.Builder) error {
+func (s *Server) setupDebugService(debugConfig envoygateway_api_v1alpha1.DebugConfig, builder *dag.Builder) error {
 	debugsvc := &debug.Service{
 		Service: httpsvc.Service{
 			Addr:        debugConfig.Address,
@@ -582,7 +582,7 @@ type xdsServer struct {
 	log             logrus.FieldLogger
 	mgr             manager.Manager
 	registry        *prometheus.Registry
-	config          contour_api_v1alpha1.XDSServerConfig
+	config          envoygateway_api_v1alpha1.XDSServerConfig
 	snapshotHandler *xdscache.SnapshotHandler
 	resources       []xdscache.ResourceCache
 }
@@ -603,11 +603,11 @@ func (x *xdsServer) Start(ctx context.Context) error {
 	grpcServer := xds.NewServer(x.registry, grpcOptions(log, x.config.TLS)...)
 
 	switch x.config.Type {
-	case contour_api_v1alpha1.EnvoyServerType:
+	case envoygateway_api_v1alpha1.EnvoyServerType:
 		v3cache := contour_xds_v3.NewSnapshotCache(false, log)
 		x.snapshotHandler.AddSnapshotter(v3cache)
 		contour_xds_v3.RegisterServer(envoy_server_v3.NewServer(ctx, v3cache, contour_xds_v3.NewRequestLoggingCallbacks(log)), grpcServer)
-	case contour_api_v1alpha1.ContourServerType:
+	case envoygateway_api_v1alpha1.ContourServerType:
 		contour_xds_v3.RegisterServer(contour_xds_v3.NewContourServer(log, xdscache.ResourcesOf(x.resources)...), grpcServer)
 	default:
 		// This can't happen due to config validation.
@@ -642,7 +642,7 @@ func (x *xdsServer) Start(ctx context.Context) error {
 }
 
 // setupMetrics creates metrics service for Contour.
-func (s *Server) setupMetrics(metricsConfig contour_api_v1alpha1.MetricsConfig, healthConfig contour_api_v1alpha1.HealthConfig,
+func (s *Server) setupMetrics(metricsConfig envoygateway_api_v1alpha1.MetricsConfig, healthConfig envoygateway_api_v1alpha1.HealthConfig,
 	registry *prometheus.Registry) error {
 
 	// Create metrics service and register with workgroup.
@@ -670,8 +670,8 @@ func (s *Server) setupMetrics(metricsConfig contour_api_v1alpha1.MetricsConfig, 
 	return s.mgr.Add(metricsvc)
 }
 
-func (s *Server) setupHealth(healthConfig contour_api_v1alpha1.HealthConfig,
-	metricsConfig contour_api_v1alpha1.MetricsConfig) error {
+func (s *Server) setupHealth(healthConfig envoygateway_api_v1alpha1.HealthConfig,
+	metricsConfig envoygateway_api_v1alpha1.MetricsConfig) error {
 
 	if healthConfig.Address != metricsConfig.Address || healthConfig.Port != metricsConfig.Port {
 		healthsvc := &httpsvc.Service{
@@ -690,7 +690,7 @@ func (s *Server) setupHealth(healthConfig contour_api_v1alpha1.HealthConfig,
 	return nil
 }
 
-func (s *Server) setupGatewayAPI(contourConfiguration contour_api_v1alpha1.ContourConfigurationSpec,
+func (s *Server) setupGatewayAPI(contourConfiguration envoygateway_api_v1alpha1.EnvoyGatewayConfigurationSpec,
 	mgr manager.Manager, eventHandler *contour.EventRecorder, sh *k8s.StatusUpdateHandler) []leadership.NeedLeaderElectionNotification {
 
 	needLeadershipNotification := []leadership.NeedLeaderElectionNotification{}
@@ -772,8 +772,8 @@ type dagBuilderConfig struct {
 	gatewayRef                *types.NamespacedName
 	disablePermitInsecure     bool
 	enableExternalNameService bool
-	dnsLookupFamily           contour_api_v1alpha1.ClusterDNSFamilyType
-	headersPolicy             *contour_api_v1alpha1.PolicyConfig
+	dnsLookupFamily           envoygateway_api_v1alpha1.ClusterDNSFamilyType
+	headersPolicy             *envoygateway_api_v1alpha1.PolicyConfig
 	clientCert                *types.NamespacedName
 	fallbackCert              *types.NamespacedName
 	connectTimeout            time.Duration
@@ -885,7 +885,7 @@ var commandOperatorRegexp = regexp.MustCompile(`%(([A-Z_]+)(\([^)]+\)(:[0-9]+)?)
 // Note: When adding support for new formatter, update the list of extensions here and
 // add corresponding configuration in internal/envoy/v3/accesslog.go extensionConfig().
 // Currently only one extension exist in Envoy.
-func AccessLogFormatterExtensions(accessLogFormat contour_api_v1alpha1.AccessLogType, accessLogFields contour_api_v1alpha1.AccessLogFields,
+func AccessLogFormatterExtensions(accessLogFormat envoygateway_api_v1alpha1.AccessLogType, accessLogFields envoygateway_api_v1alpha1.AccessLogFields,
 	accessLogFormatString string) []string {
 	// Function that finds out if command operator is present in a format string.
 	contains := func(format, command string) bool {
@@ -900,11 +900,11 @@ func AccessLogFormatterExtensions(accessLogFormat contour_api_v1alpha1.AccessLog
 
 	extensionsMap := make(map[string]bool)
 	switch accessLogFormat {
-	case contour_api_v1alpha1.EnvoyAccessLog:
+	case envoygateway_api_v1alpha1.EnvoyAccessLog:
 		if contains(accessLogFormatString, "REQ_WITHOUT_QUERY") {
 			extensionsMap["envoy.formatter.req_without_query"] = true
 		}
-	case contour_api_v1alpha1.JSONAccessLog:
+	case envoygateway_api_v1alpha1.JSONAccessLog:
 		for _, f := range accessLogFields.AsFieldMap() {
 			if contains(f, "REQ_WITHOUT_QUERY") {
 				extensionsMap["envoy.formatter.req_without_query"] = true

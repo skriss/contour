@@ -23,7 +23,7 @@ import (
 	"strings"
 	"time"
 
-	contour_api_v1alpha1 "github.com/projectcontour/contour/apis/projectcontour/v1alpha1"
+	envoygateway_api_v1alpha1 "github.com/projectcontour/contour/apis/envoygateway/v1alpha1"
 	envoy_v3 "github.com/projectcontour/contour/internal/envoy/v3"
 	"github.com/projectcontour/contour/internal/k8s"
 	xdscache_v3 "github.com/projectcontour/contour/internal/xdscache/v3"
@@ -138,7 +138,7 @@ func newServeContext() *serveContext {
 // grpcOptions returns a slice of grpc.ServerOptions.
 // if ctx.PermitInsecureGRPC is false, the option set will
 // include TLS configuration.
-func grpcOptions(log logrus.FieldLogger, contourXDSConfig *contour_api_v1alpha1.TLS) []grpc.ServerOption {
+func grpcOptions(log logrus.FieldLogger, contourXDSConfig *envoygateway_api_v1alpha1.TLS) []grpc.ServerOption {
 	opts := []grpc.ServerOption{
 		// By default the Go grpc library defaults to a value of ~100 streams per
 		// connection. This number is likely derived from the HTTP/2 spec:
@@ -170,7 +170,7 @@ func grpcOptions(log logrus.FieldLogger, contourXDSConfig *contour_api_v1alpha1.
 
 // tlsconfig returns a new *tls.Config. If the TLS parameters passed are not properly configured
 // for tls communication, tlsconfig returns nil.
-func tlsconfig(log logrus.FieldLogger, contourXDSTLS *contour_api_v1alpha1.TLS) *tls.Config {
+func tlsconfig(log logrus.FieldLogger, contourXDSTLS *envoygateway_api_v1alpha1.TLS) *tls.Config {
 	err := verifyTLSFlags(contourXDSTLS)
 	if err != nil {
 		log.WithError(err).Fatal("failed to verify TLS flags")
@@ -221,7 +221,7 @@ func tlsconfig(log logrus.FieldLogger, contourXDSTLS *contour_api_v1alpha1.TLS) 
 }
 
 // verifyTLSFlags indicates if the TLS flags are set up correctly.
-func verifyTLSFlags(contourXDSTLS *contour_api_v1alpha1.TLS) error {
+func verifyTLSFlags(contourXDSTLS *envoygateway_api_v1alpha1.TLS) error {
 	if contourXDSTLS.CAFile == "" && contourXDSTLS.CertFile == "" && contourXDSTLS.KeyFile == "" {
 		return errors.New("no TLS parameters and --insecure not supplied. You must supply one or the other")
 	}
@@ -248,14 +248,14 @@ func (ctx *serveContext) proxyRootNamespaces() []string {
 
 // parseDefaultHTTPVersions parses a list of supported HTTP versions
 //  (of the form "HTTP/xx") into a slice of unique version constants.
-func parseDefaultHTTPVersions(versions []contour_api_v1alpha1.HTTPVersionType) []envoy_v3.HTTPVersionType {
+func parseDefaultHTTPVersions(versions []envoygateway_api_v1alpha1.HTTPVersionType) []envoy_v3.HTTPVersionType {
 	wanted := map[envoy_v3.HTTPVersionType]struct{}{}
 
 	for _, v := range versions {
 		switch v {
-		case contour_api_v1alpha1.HTTPVersion1:
+		case envoygateway_api_v1alpha1.HTTPVersion1:
 			wanted[envoy_v3.HTTPVersion1] = struct{}{}
-		case contour_api_v1alpha1.HTTPVersion2:
+		case envoygateway_api_v1alpha1.HTTPVersion2:
 			wanted[envoy_v3.HTTPVersion2] = struct{}{}
 		}
 	}
@@ -268,74 +268,74 @@ func parseDefaultHTTPVersions(versions []contour_api_v1alpha1.HTTPVersionType) [
 	return parsed
 }
 
-func (ctx *serveContext) convertToContourConfigurationSpec() contour_api_v1alpha1.ContourConfigurationSpec {
-	ingress := &contour_api_v1alpha1.IngressConfig{}
+func (ctx *serveContext) convertToContourConfigurationSpec() envoygateway_api_v1alpha1.EnvoyGatewayConfigurationSpec {
+	ingress := &envoygateway_api_v1alpha1.IngressConfig{}
 	if len(ctx.ingressClassName) > 0 {
 		ingress.ClassNames = strings.Split(ctx.ingressClassName, ",")
 	}
 	ingress.StatusAddress = ctx.Config.IngressStatusAddress
 
-	debugLogLevel := contour_api_v1alpha1.InfoLog
+	debugLogLevel := envoygateway_api_v1alpha1.InfoLog
 	switch ctx.Config.Debug {
 	case true:
-		debugLogLevel = contour_api_v1alpha1.DebugLog
+		debugLogLevel = envoygateway_api_v1alpha1.DebugLog
 	case false:
-		debugLogLevel = contour_api_v1alpha1.InfoLog
+		debugLogLevel = envoygateway_api_v1alpha1.InfoLog
 	}
 
-	var gatewayConfig *contour_api_v1alpha1.GatewayConfig
+	var gatewayConfig *envoygateway_api_v1alpha1.GatewayConfig
 	if ctx.Config.GatewayConfig != nil {
-		gatewayConfig = &contour_api_v1alpha1.GatewayConfig{
+		gatewayConfig = &envoygateway_api_v1alpha1.GatewayConfig{
 			ControllerName: ctx.Config.GatewayConfig.ControllerName,
 		}
 
 		if ctx.Config.GatewayConfig.GatewayRef != nil {
-			gatewayConfig.GatewayRef = &contour_api_v1alpha1.NamespacedName{
+			gatewayConfig.GatewayRef = &envoygateway_api_v1alpha1.NamespacedName{
 				Namespace: ctx.Config.GatewayConfig.GatewayRef.Namespace,
 				Name:      ctx.Config.GatewayConfig.GatewayRef.Name,
 			}
 		}
 	}
 
-	var cipherSuites []contour_api_v1alpha1.TLSCipherType
+	var cipherSuites []envoygateway_api_v1alpha1.TLSCipherType
 	for _, suite := range ctx.Config.TLS.CipherSuites {
-		cipherSuites = append(cipherSuites, contour_api_v1alpha1.TLSCipherType(suite))
+		cipherSuites = append(cipherSuites, envoygateway_api_v1alpha1.TLSCipherType(suite))
 	}
 
-	var accessLogFormat contour_api_v1alpha1.AccessLogType
+	var accessLogFormat envoygateway_api_v1alpha1.AccessLogType
 	switch ctx.Config.AccessLogFormat {
 	case config.EnvoyAccessLog:
-		accessLogFormat = contour_api_v1alpha1.EnvoyAccessLog
+		accessLogFormat = envoygateway_api_v1alpha1.EnvoyAccessLog
 	case config.JSONAccessLog:
-		accessLogFormat = contour_api_v1alpha1.JSONAccessLog
+		accessLogFormat = envoygateway_api_v1alpha1.JSONAccessLog
 	}
 
-	var accessLogFields contour_api_v1alpha1.AccessLogFields
+	var accessLogFields envoygateway_api_v1alpha1.AccessLogFields
 	for _, alf := range ctx.Config.AccessLogFields {
 		accessLogFields = append(accessLogFields, alf)
 	}
 
-	var accessLogLevel contour_api_v1alpha1.AccessLogLevel
+	var accessLogLevel envoygateway_api_v1alpha1.AccessLogLevel
 	switch ctx.Config.AccessLogLevel {
 	case config.LogLevelInfo:
-		accessLogLevel = contour_api_v1alpha1.LogLevelInfo
+		accessLogLevel = envoygateway_api_v1alpha1.LogLevelInfo
 	case config.LogLevelError:
-		accessLogLevel = contour_api_v1alpha1.LogLevelError
+		accessLogLevel = envoygateway_api_v1alpha1.LogLevelError
 	case config.LogLevelDisabled:
-		accessLogLevel = contour_api_v1alpha1.LogLevelDisabled
+		accessLogLevel = envoygateway_api_v1alpha1.LogLevelDisabled
 	}
 
-	var defaultHTTPVersions []contour_api_v1alpha1.HTTPVersionType
+	var defaultHTTPVersions []envoygateway_api_v1alpha1.HTTPVersionType
 	for _, version := range ctx.Config.DefaultHTTPVersions {
 		switch version {
 		case config.HTTPVersion1:
-			defaultHTTPVersions = append(defaultHTTPVersions, contour_api_v1alpha1.HTTPVersion1)
+			defaultHTTPVersions = append(defaultHTTPVersions, envoygateway_api_v1alpha1.HTTPVersion1)
 		case config.HTTPVersion2:
-			defaultHTTPVersions = append(defaultHTTPVersions, contour_api_v1alpha1.HTTPVersion2)
+			defaultHTTPVersions = append(defaultHTTPVersions, envoygateway_api_v1alpha1.HTTPVersion2)
 		}
 	}
 
-	timeoutParams := &contour_api_v1alpha1.TimeoutParameters{}
+	timeoutParams := &envoygateway_api_v1alpha1.TimeoutParameters{}
 	if len(ctx.Config.Timeouts.RequestTimeout) > 0 {
 		timeoutParams.RequestTimeout = pointer.StringPtr(ctx.Config.Timeouts.RequestTimeout)
 	}
@@ -358,22 +358,22 @@ func (ctx *serveContext) convertToContourConfigurationSpec() contour_api_v1alpha
 		timeoutParams.ConnectTimeout = pointer.StringPtr(ctx.Config.Timeouts.ConnectTimeout)
 	}
 
-	var dnsLookupFamily contour_api_v1alpha1.ClusterDNSFamilyType
+	var dnsLookupFamily envoygateway_api_v1alpha1.ClusterDNSFamilyType
 	switch ctx.Config.Cluster.DNSLookupFamily {
 	case config.AutoClusterDNSFamily:
-		dnsLookupFamily = contour_api_v1alpha1.AutoClusterDNSFamily
+		dnsLookupFamily = envoygateway_api_v1alpha1.AutoClusterDNSFamily
 	case config.IPv6ClusterDNSFamily:
-		dnsLookupFamily = contour_api_v1alpha1.IPv6ClusterDNSFamily
+		dnsLookupFamily = envoygateway_api_v1alpha1.IPv6ClusterDNSFamily
 	case config.IPv4ClusterDNSFamily:
-		dnsLookupFamily = contour_api_v1alpha1.IPv4ClusterDNSFamily
+		dnsLookupFamily = envoygateway_api_v1alpha1.IPv4ClusterDNSFamily
 	}
 
-	var rateLimitService *contour_api_v1alpha1.RateLimitServiceConfig
+	var rateLimitService *envoygateway_api_v1alpha1.RateLimitServiceConfig
 	if ctx.Config.RateLimitService.ExtensionService != "" {
 
 		nsedName := k8s.NamespacedNameFrom(ctx.Config.RateLimitService.ExtensionService)
-		rateLimitService = &contour_api_v1alpha1.RateLimitServiceConfig{
-			ExtensionService: contour_api_v1alpha1.NamespacedName{
+		rateLimitService = &envoygateway_api_v1alpha1.RateLimitServiceConfig{
+			ExtensionService: envoygateway_api_v1alpha1.NamespacedName{
 				Name:      nsedName.Name,
 				Namespace: nsedName.Namespace,
 			},
@@ -383,40 +383,40 @@ func (ctx *serveContext) convertToContourConfigurationSpec() contour_api_v1alpha
 		}
 	}
 
-	policy := &contour_api_v1alpha1.PolicyConfig{
-		RequestHeadersPolicy: &contour_api_v1alpha1.HeadersPolicy{
+	policy := &envoygateway_api_v1alpha1.PolicyConfig{
+		RequestHeadersPolicy: &envoygateway_api_v1alpha1.HeadersPolicy{
 			Set:    ctx.Config.Policy.RequestHeadersPolicy.Set,
 			Remove: ctx.Config.Policy.RequestHeadersPolicy.Remove,
 		},
-		ResponseHeadersPolicy: &contour_api_v1alpha1.HeadersPolicy{
+		ResponseHeadersPolicy: &envoygateway_api_v1alpha1.HeadersPolicy{
 			Set:    ctx.Config.Policy.ResponseHeadersPolicy.Set,
 			Remove: ctx.Config.Policy.ResponseHeadersPolicy.Remove,
 		},
 		ApplyToIngress: pointer.Bool(ctx.Config.Policy.ApplyToIngress),
 	}
 
-	var clientCertificate *contour_api_v1alpha1.NamespacedName
+	var clientCertificate *envoygateway_api_v1alpha1.NamespacedName
 	if len(ctx.Config.TLS.ClientCertificate.Name) > 0 {
-		clientCertificate = &contour_api_v1alpha1.NamespacedName{
+		clientCertificate = &envoygateway_api_v1alpha1.NamespacedName{
 			Name:      ctx.Config.TLS.ClientCertificate.Name,
 			Namespace: ctx.Config.TLS.ClientCertificate.Namespace,
 		}
 	}
 
-	var fallbackCertificate *contour_api_v1alpha1.NamespacedName
+	var fallbackCertificate *envoygateway_api_v1alpha1.NamespacedName
 	if len(ctx.Config.TLS.FallbackCertificate.Name) > 0 {
-		fallbackCertificate = &contour_api_v1alpha1.NamespacedName{
+		fallbackCertificate = &envoygateway_api_v1alpha1.NamespacedName{
 			Name:      ctx.Config.TLS.FallbackCertificate.Name,
 			Namespace: ctx.Config.TLS.FallbackCertificate.Namespace,
 		}
 	}
 
-	contourMetrics := contour_api_v1alpha1.MetricsConfig{
+	contourMetrics := envoygateway_api_v1alpha1.MetricsConfig{
 		Address: ctx.metricsAddr,
 		Port:    ctx.metricsPort,
 	}
 
-	envoyMetrics := contour_api_v1alpha1.MetricsConfig{
+	envoyMetrics := envoygateway_api_v1alpha1.MetricsConfig{
 		Address: ctx.statsAddr,
 		Port:    ctx.statsPort,
 	}
@@ -432,49 +432,49 @@ func (ctx *serveContext) convertToContourConfigurationSpec() contour_api_v1alpha
 	setMetricsFromConfig(ctx.Config.Metrics.Envoy, &envoyMetrics)
 
 	// Convert serveContext to a ContourConfiguration
-	contourConfiguration := contour_api_v1alpha1.ContourConfigurationSpec{
+	contourConfiguration := envoygateway_api_v1alpha1.EnvoyGatewayConfigurationSpec{
 		Ingress: ingress,
-		Debug: &contour_api_v1alpha1.DebugConfig{
+		Debug: &envoygateway_api_v1alpha1.DebugConfig{
 			Address:                 ctx.debugAddr,
 			Port:                    ctx.debugPort,
 			DebugLogLevel:           debugLogLevel,
 			KubernetesDebugLogLevel: &ctx.KubernetesDebug,
 		},
-		Health: &contour_api_v1alpha1.HealthConfig{
+		Health: &envoygateway_api_v1alpha1.HealthConfig{
 			Address: ctx.healthAddr,
 			Port:    ctx.healthPort,
 		},
-		Envoy: &contour_api_v1alpha1.EnvoyConfig{
-			Listener: &contour_api_v1alpha1.EnvoyListenerConfig{
+		Envoy: &envoygateway_api_v1alpha1.EnvoyConfig{
+			Listener: &envoygateway_api_v1alpha1.EnvoyListenerConfig{
 				UseProxyProto:             &ctx.useProxyProto,
 				DisableAllowChunkedLength: &ctx.Config.DisableAllowChunkedLength,
 				ConnectionBalancer:        ctx.Config.Listener.ConnectionBalancer,
-				TLS: &contour_api_v1alpha1.EnvoyTLS{
+				TLS: &envoygateway_api_v1alpha1.EnvoyTLS{
 					MinimumProtocolVersion: ctx.Config.TLS.MinimumProtocolVersion,
 					CipherSuites:           cipherSuites,
 				},
 			},
-			Service: &contour_api_v1alpha1.NamespacedName{
+			Service: &envoygateway_api_v1alpha1.NamespacedName{
 				Name:      ctx.Config.EnvoyServiceName,
 				Namespace: ctx.Config.EnvoyServiceNamespace,
 			},
-			HTTPListener: &contour_api_v1alpha1.EnvoyListener{
+			HTTPListener: &envoygateway_api_v1alpha1.EnvoyListener{
 				Address:   ctx.httpAddr,
 				Port:      ctx.httpPort,
 				AccessLog: ctx.httpAccessLog,
 			},
-			HTTPSListener: &contour_api_v1alpha1.EnvoyListener{
+			HTTPSListener: &envoygateway_api_v1alpha1.EnvoyListener{
 				Address:   ctx.httpsAddr,
 				Port:      ctx.httpsPort,
 				AccessLog: ctx.httpsAccessLog,
 			},
 			Metrics: &envoyMetrics,
-			Health: &contour_api_v1alpha1.HealthConfig{
+			Health: &envoygateway_api_v1alpha1.HealthConfig{
 				Address: ctx.statsAddr,
 				Port:    ctx.statsPort,
 			},
 			ClientCertificate: clientCertificate,
-			Logging: &contour_api_v1alpha1.EnvoyLogging{
+			Logging: &envoygateway_api_v1alpha1.EnvoyLogging{
 				AccessLogFormat:       accessLogFormat,
 				AccessLogFormatString: ctx.Config.AccessLogFormatString,
 				AccessLogFields:       accessLogFields,
@@ -482,16 +482,16 @@ func (ctx *serveContext) convertToContourConfigurationSpec() contour_api_v1alpha
 			},
 			DefaultHTTPVersions: defaultHTTPVersions,
 			Timeouts:            timeoutParams,
-			Cluster: &contour_api_v1alpha1.ClusterParameters{
+			Cluster: &envoygateway_api_v1alpha1.ClusterParameters{
 				DNSLookupFamily: dnsLookupFamily,
 			},
-			Network: &contour_api_v1alpha1.NetworkParameters{
+			Network: &envoygateway_api_v1alpha1.NetworkParameters{
 				XffNumTrustedHops: &ctx.Config.Network.XffNumTrustedHops,
 				EnvoyAdminPort:    &ctx.Config.Network.EnvoyAdminPort,
 			},
 		},
 		Gateway: gatewayConfig,
-		HTTPProxy: &contour_api_v1alpha1.HTTPProxyConfig{
+		HTTPProxy: &envoygateway_api_v1alpha1.HTTPProxyConfig{
 			DisablePermitInsecure: &ctx.Config.DisablePermitInsecure,
 			RootNamespaces:        ctx.proxyRootNamespaces(),
 			FallbackCertificate:   fallbackCertificate,
@@ -502,16 +502,16 @@ func (ctx *serveContext) convertToContourConfigurationSpec() contour_api_v1alpha
 		Metrics:                   &contourMetrics,
 	}
 
-	xdsServerType := contour_api_v1alpha1.ContourServerType
+	xdsServerType := envoygateway_api_v1alpha1.ContourServerType
 	if ctx.Config.Server.XDSServerType == config.EnvoyServerType {
-		xdsServerType = contour_api_v1alpha1.EnvoyServerType
+		xdsServerType = envoygateway_api_v1alpha1.EnvoyServerType
 	}
 
-	contourConfiguration.XDSServer = &contour_api_v1alpha1.XDSServerConfig{
+	contourConfiguration.XDSServer = &envoygateway_api_v1alpha1.XDSServerConfig{
 		Type:    xdsServerType,
 		Address: ctx.xdsAddr,
 		Port:    ctx.xdsPort,
-		TLS: &contour_api_v1alpha1.TLS{
+		TLS: &envoygateway_api_v1alpha1.TLS{
 			CAFile:   ctx.caFile,
 			CertFile: ctx.contourCert,
 			KeyFile:  ctx.contourKey,
@@ -522,7 +522,7 @@ func (ctx *serveContext) convertToContourConfigurationSpec() contour_api_v1alpha
 	return contourConfiguration
 }
 
-func setMetricsFromConfig(src config.MetricsServerParameters, dst *contour_api_v1alpha1.MetricsConfig) {
+func setMetricsFromConfig(src config.MetricsServerParameters, dst *envoygateway_api_v1alpha1.MetricsConfig) {
 	if len(src.Address) > 0 {
 		dst.Address = src.Address
 	}
@@ -532,7 +532,7 @@ func setMetricsFromConfig(src config.MetricsServerParameters, dst *contour_api_v
 	}
 
 	if src.HasTLS() {
-		dst.TLS = &contour_api_v1alpha1.MetricsTLS{
+		dst.TLS = &envoygateway_api_v1alpha1.MetricsTLS{
 			CertFile: src.ServerCert,
 			KeyFile:  src.ServerKey,
 			CAFile:   src.CABundle,
@@ -540,7 +540,7 @@ func setMetricsFromConfig(src config.MetricsServerParameters, dst *contour_api_v
 	}
 
 	if src.HasTLS() {
-		dst.TLS = &contour_api_v1alpha1.MetricsTLS{
+		dst.TLS = &envoygateway_api_v1alpha1.MetricsTLS{
 			CertFile: src.ServerCert,
 			KeyFile:  src.ServerKey,
 			CAFile:   src.CABundle,

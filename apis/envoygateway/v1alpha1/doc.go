@@ -11,4 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package projectcontour
+// Package v1alpha1 contains API Schema definitions for the gateway.envoyproxy.io v1alpha1 API group
+//
+// +kubebuilder:object:generate=true
+// +k8s:deepcopy-gen=package
+// +groupName=gateway.envoyproxy.io
+package v1alpha1

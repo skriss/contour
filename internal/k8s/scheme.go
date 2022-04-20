@@ -14,7 +14,7 @@
 package k8s
 
 import (
-	contour_api_v1alpha1 "github.com/projectcontour/contour/apis/projectcontour/v1alpha1"
+	envoygateway_api_v1alpha1 "github.com/projectcontour/contour/apis/envoygateway/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 	gatewayapi_v1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
@@ -26,7 +26,7 @@ import (
 func NewContourScheme() (*runtime.Scheme, error) {
 	s := runtime.NewScheme()
 	b := runtime.SchemeBuilder{
-		contour_api_v1alpha1.AddToScheme,
+		envoygateway_api_v1alpha1.AddToScheme,
 		scheme.AddToScheme,
 		gatewayapi_v1alpha2.AddToScheme,
 	}

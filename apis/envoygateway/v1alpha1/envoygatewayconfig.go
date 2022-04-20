@@ -14,14 +14,13 @@
 package v1alpha1
 
 import (
-	contour_api_v1 "github.com/projectcontour/contour/apis/projectcontour/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// ContourConfigurationSpec represents a configuration of a Contour controller.
+// EnvoyGatewayConfigurationSpec represents a configuration of an Envoy Gateway controller.
 // It contains most of all the options that can be customized, the
 // other remaining options being command line flags.
-type ContourConfigurationSpec struct {
+type EnvoyGatewayConfigurationSpec struct {
 	// XDSServer contains parameters for the xDS server.
 	// +optional
 	XDSServer *XDSServerConfig `json:"xdsServer,omitempty"`
@@ -634,8 +633,8 @@ type NamespacedName struct {
 	Namespace string `json:"namespace"`
 }
 
-// ContourConfigurationStatus defines the observed state of a ContourConfiguration resource.
-type ContourConfigurationStatus struct {
+// EnvoyGatewayConfigurationStatus defines the observed state of a ContourConfiguration resource.
+type EnvoyGatewayConfigurationStatus struct {
 	// Conditions contains the current status of the Contour resource.
 	//
 	// Contour will update a single condition, `Valid`, that is in normal-true polarity.
@@ -648,31 +647,31 @@ type ContourConfigurationStatus struct {
 	// +patchStrategy=merge
 	// +listType=map
 	// +listMapKey=type
-	Conditions []contour_api_v1.DetailedCondition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
+	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
 }
 
 // +genclient
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// +kubebuilder:resource:scope=Namespaced,shortName=contourconfig
+// +kubebuilder:resource:scope=Namespaced,shortName=envoygatewayconfig
 
-// ContourConfiguration is the schema for a Contour instance.
-type ContourConfiguration struct {
+// EnvoyGatewayConfiguration is the schema for an Envoy Gateway instance.
+type EnvoyGatewayConfiguration struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec ContourConfigurationSpec `json:"spec"`
+	Spec EnvoyGatewayConfigurationSpec `json:"spec"`
 
 	// +optional
-	Status ContourConfigurationStatus `json:"status,omitempty"`
+	Status EnvoyGatewayConfigurationStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// ContourConfigurationList contains a list of Contour configuration resources.
-type ContourConfigurationList struct {
+// EnvoyGatewayConfigurationList contains a list of Envoy Gateway configuration resources.
+type EnvoyGatewayConfigurationList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []ContourConfiguration `json:"items"`
+	Items           []EnvoyGatewayConfiguration `json:"items"`
 }

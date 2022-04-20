@@ -17,6 +17,7 @@ import (
 	"context"
 	"fmt"
 
+	envoygatewayv1alpha1 "github.com/projectcontour/contour/apis/envoygateway/v1alpha1"
 	"github.com/projectcontour/contour/internal/provisioner/equality"
 	"github.com/projectcontour/contour/internal/provisioner/labels"
 	"github.com/projectcontour/contour/internal/provisioner/model"
@@ -94,9 +95,9 @@ func desiredClusterRole(name string, contour *model.Contour) *rbacv1.ClusterRole
 			policyRuleFor(networkingv1.GroupName, getListWatch, "ingresses"),
 			policyRuleFor(networkingv1.GroupName, createGetUpdate, "ingresses/status"),
 
-			// Contour CRDs.
-			policyRuleFor(contourV1GroupName, getListWatch, "httpproxies", "tlscertificatedelegations", "extensionservices", "contourconfigurations"),
-			policyRuleFor(contourV1GroupName, createGetUpdate, "httpproxies/status", "extensionservices/status", "contourconfigurations/status"),
+			// Envoy Gateway CRDs.
+			policyRuleFor(envoygatewayv1alpha1.GroupVersion.Group, getListWatch, "envoygatewayconfigurations"),
+			policyRuleFor(envoygatewayv1alpha1.GroupVersion.Group, createGetUpdate, "envoygatewayconfigurations/status"),
 		},
 	}
 }

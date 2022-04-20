@@ -32,7 +32,7 @@ import (
 	"time"
 
 	"github.com/onsi/gomega/gexec"
-	contour_api_v1alpha1 "github.com/projectcontour/contour/apis/projectcontour/v1alpha1"
+	envoygateway_api_v1alpha1 "github.com/projectcontour/contour/apis/envoygateway/v1alpha1"
 	"github.com/projectcontour/contour/pkg/config"
 	"gopkg.in/yaml.v2"
 	apps_v1 "k8s.io/api/apps/v1"
@@ -107,7 +107,7 @@ type Deployment struct {
 	// Ratelimit deployment.
 	RateLimitDeployment       *apps_v1.Deployment
 	RateLimitService          *v1.Service
-	RateLimitExtensionService *contour_api_v1alpha1.ExtensionService
+	RateLimitExtensionService *envoygateway_api_v1alpha1.ExtensionService
 }
 
 // UnmarshalResources unmarshals resources from rendered Contour manifest in
@@ -222,7 +222,7 @@ func (d *Deployment) UnmarshalResources() error {
 	}
 	defer rLESFile.Close()
 	decoder = apimachinery_util_yaml.NewYAMLToJSONDecoder(rLESFile)
-	d.RateLimitExtensionService = new(contour_api_v1alpha1.ExtensionService)
+	d.RateLimitExtensionService = new(envoygateway_api_v1alpha1.ExtensionService)
 
 	return decoder.Decode(d.RateLimitExtensionService)
 }
@@ -448,7 +448,7 @@ func (d *Deployment) EnsureRateLimitResources(namespace string, configContents s
 
 	extSvc := d.RateLimitExtensionService.DeepCopy()
 	extSvc.Namespace = setNamespace
-	return d.ensureResource(extSvc, new(contour_api_v1alpha1.ExtensionService))
+	return d.ensureResource(extSvc, new(envoygateway_api_v1alpha1.ExtensionService))
 }
 
 // Convenience method for deploying the pieces of the deployment needed for
@@ -608,7 +608,7 @@ func (d *Deployment) DeleteResourcesForLocalContour() error {
 // Starts local contour, applying arguments and marshaling config into config
 // file. Returns running Contour command and config file so we can clean them
 // up.
-func (d *Deployment) StartLocalContour(config *config.Parameters, contourConfiguration *contour_api_v1alpha1.ContourConfiguration, additionalArgs ...string) (*gexec.Session, string, error) {
+func (d *Deployment) StartLocalContour(config *config.Parameters, contourConfiguration *envoygateway_api_v1alpha1.EnvoyGatewayConfiguration, additionalArgs ...string) (*gexec.Session, string, error) {
 
 	var content []byte
 	var configReferenceName string
@@ -625,7 +625,7 @@ func (d *Deployment) StartLocalContour(config *config.Parameters, contourConfigu
 		// Set the xds server to the defined testing port as well as enable insecure communication.
 		contourConfiguration.Spec.XDSServer.Port = port
 		contourConfiguration.Spec.XDSServer.Address = "0.0.0.0"
-		contourConfiguration.Spec.XDSServer.TLS = &contour_api_v1alpha1.TLS{
+		contourConfiguration.Spec.XDSServer.TLS = &envoygateway_api_v1alpha1.TLS{
 			Insecure: pointer.Bool(true),
 		}
 
@@ -682,7 +682,7 @@ func (d *Deployment) StopLocalContour(contourCmd *gexec.Session, configFile stri
 	// Look for the ENV variable to tell if this test run should use
 	// the ContourConfiguration file or the ContourConfiguration CRD.
 	if useContourConfiguration, variableFound := os.LookupEnv("USE_CONTOUR_CONFIGURATION_CRD"); variableFound && useContourConfiguration == "true" {
-		cc := &contour_api_v1alpha1.ContourConfiguration{
+		cc := &envoygateway_api_v1alpha1.EnvoyGatewayConfiguration{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      configFile,
 				Namespace: "projectcontour",

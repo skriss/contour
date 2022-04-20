@@ -19,12 +19,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-var ExtensionServiceGVR = GroupVersion.WithResource("extensionservices")
-var ContourConfigurationGVR = GroupVersion.WithResource("contourconfigurations")
-
 var (
 	// GroupVersion is group version used to register these objects
-	GroupVersion = schema.GroupVersion{Group: "projectcontour.io", Version: "v1alpha1"}
+	GroupVersion = schema.GroupVersion{Group: "gateway.envoyproxy.io", Version: "v1alpha1"}
 
 	// SchemeBuilder is used to add go types to the GroupVersionKind scheme
 	SchemeBuilder = runtime.NewSchemeBuilder(addKnownTypes)
@@ -36,8 +33,8 @@ var (
 func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(
 		GroupVersion,
-		&ContourConfiguration{},
-		&ContourConfigurationList{},
+		&EnvoyGatewayConfiguration{},
+		&EnvoyGatewayConfigurationList{},
 	)
 
 	metav1.AddToGroupVersion(scheme, GroupVersion)

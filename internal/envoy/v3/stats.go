@@ -21,7 +21,7 @@ import (
 	http "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_tls_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	contour_api_v1alpha1 "github.com/projectcontour/contour/apis/projectcontour/v1alpha1"
+	envoygateway_api_v1alpha1 "github.com/projectcontour/contour/apis/envoygateway/v1alpha1"
 	"github.com/projectcontour/contour/internal/protobuf"
 )
 
@@ -33,7 +33,7 @@ const metricsCaBundleSDSName = "metrics-ca-certificate"
 // The listeners are configured to serve:
 //   - prometheus metrics on /stats (either over HTTP or HTTPS)
 //   - readiness probe on /ready (always over HTTP)
-func StatsListeners(metrics contour_api_v1alpha1.MetricsConfig, health contour_api_v1alpha1.HealthConfig) []*envoy_listener_v3.Listener {
+func StatsListeners(metrics envoygateway_api_v1alpha1.MetricsConfig, health envoygateway_api_v1alpha1.HealthConfig) []*envoy_listener_v3.Listener {
 	var listeners []*envoy_listener_v3.Listener
 
 	switch {
@@ -191,7 +191,7 @@ func downstreamTLSContext(clientValidation bool) *envoy_tls_v3.DownstreamTlsCont
 }
 
 // StatsSecrets returns SDS secrets that refer to local file paths in Envoy container.
-func StatsSecrets(metricsTLS *contour_api_v1alpha1.MetricsTLS) []*envoy_tls_v3.Secret {
+func StatsSecrets(metricsTLS *envoygateway_api_v1alpha1.MetricsTLS) []*envoy_tls_v3.Secret {
 	secrets := []*envoy_tls_v3.Secret{}
 
 	if metricsTLS != nil {

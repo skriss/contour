@@ -34,7 +34,7 @@ import (
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
-	contour_api_v1alpha1 "github.com/projectcontour/contour/apis/projectcontour/v1alpha1"
+	envoygateway_api_v1alpha1 "github.com/projectcontour/contour/apis/envoygateway/v1alpha1"
 	"github.com/projectcontour/contour/internal/dag"
 	envoy_v3 "github.com/projectcontour/contour/internal/envoy/v3"
 	"github.com/projectcontour/contour/internal/protobuf"
@@ -415,7 +415,7 @@ func filterchaintlsfallback(fallbackSecret *v1.Secret, peerValidationContext *da
 				DefaultFilters().
 				RouteConfigName(xdscache_v3.ENVOY_FALLBACK_ROUTECONFIG).
 				MetricsPrefix(xdscache_v3.ENVOY_HTTPS_LISTENER).
-				AccessLoggers(envoy_v3.FileAccessLogEnvoy("/dev/stdout", "", nil, contour_api_v1alpha1.LogLevelInfo)).
+				AccessLoggers(envoy_v3.FileAccessLogEnvoy("/dev/stdout", "", nil, envoygateway_api_v1alpha1.LogLevelInfo)).
 				Get(),
 		),
 	)
@@ -427,7 +427,7 @@ func httpsFilterFor(vhost string) *envoy_listener_v3.Filter {
 		DefaultFilters().
 		RouteConfigName(path.Join("https", vhost)).
 		MetricsPrefix(xdscache_v3.ENVOY_HTTPS_LISTENER).
-		AccessLoggers(envoy_v3.FileAccessLogEnvoy("/dev/stdout", "", nil, contour_api_v1alpha1.LogLevelInfo)).
+		AccessLoggers(envoy_v3.FileAccessLogEnvoy("/dev/stdout", "", nil, envoygateway_api_v1alpha1.LogLevelInfo)).
 		Get()
 }
 
@@ -449,7 +449,7 @@ func authzFilterFor(
 		}).
 		RouteConfigName(path.Join("https", vhost)).
 		MetricsPrefix(xdscache_v3.ENVOY_HTTPS_LISTENER).
-		AccessLoggers(envoy_v3.FileAccessLogEnvoy("/dev/stdout", "", nil, contour_api_v1alpha1.LogLevelInfo)).
+		AccessLoggers(envoy_v3.FileAccessLogEnvoy("/dev/stdout", "", nil, envoygateway_api_v1alpha1.LogLevelInfo)).
 		Get()
 }
 
@@ -462,7 +462,7 @@ func tcpproxy(statPrefix, cluster string) *envoy_listener_v3.Filter {
 				ClusterSpecifier: &envoy_tcp_proxy_v3.TcpProxy_Cluster{
 					Cluster: cluster,
 				},
-				AccessLog:   envoy_v3.FileAccessLogEnvoy("/dev/stdout", "", nil, contour_api_v1alpha1.LogLevelInfo),
+				AccessLog:   envoy_v3.FileAccessLogEnvoy("/dev/stdout", "", nil, envoygateway_api_v1alpha1.LogLevelInfo),
 				IdleTimeout: protobuf.Duration(9001 * time.Second),
 			}),
 		},
@@ -491,7 +491,7 @@ func tcpproxyWeighted(statPrefix string, clusters ...clusterWeight) *envoy_liste
 				ClusterSpecifier: &envoy_tcp_proxy_v3.TcpProxy_WeightedClusters{
 					WeightedClusters: weightedClusters,
 				},
-				AccessLog:   envoy_v3.FileAccessLogEnvoy("/dev/stdout", "", nil, contour_api_v1alpha1.LogLevelInfo),
+				AccessLog:   envoy_v3.FileAccessLogEnvoy("/dev/stdout", "", nil, envoygateway_api_v1alpha1.LogLevelInfo),
 				IdleTimeout: protobuf.Duration(9001 * time.Second),
 			}),
 		},
@@ -501,8 +501,8 @@ func tcpproxyWeighted(statPrefix string, clusters ...clusterWeight) *envoy_liste
 func statsListener() *envoy_listener_v3.Listener {
 	// Single listener with metrics and health endpoints.
 	listeners := envoy_v3.StatsListeners(
-		contour_api_v1alpha1.MetricsConfig{Address: "0.0.0.0", Port: 8002},
-		contour_api_v1alpha1.HealthConfig{Address: "0.0.0.0", Port: 8002})
+		envoygateway_api_v1alpha1.MetricsConfig{Address: "0.0.0.0", Port: 8002},
+		envoygateway_api_v1alpha1.HealthConfig{Address: "0.0.0.0", Port: 8002})
 	return listeners[0]
 }
 
@@ -515,7 +515,7 @@ func defaultHTTPListener() *envoy_listener_v3.Listener {
 		Name:    "ingress_http",
 		Address: envoy_v3.SocketAddress("0.0.0.0", 8080),
 		FilterChains: envoy_v3.FilterChains(
-			envoy_v3.HTTPConnectionManager("ingress_http", envoy_v3.FileAccessLogEnvoy("/dev/stdout", "", nil, contour_api_v1alpha1.LogLevelInfo), 0),
+			envoy_v3.HTTPConnectionManager("ingress_http", envoy_v3.FileAccessLogEnvoy("/dev/stdout", "", nil, envoygateway_api_v1alpha1.LogLevelInfo), 0),
 		),
 		SocketOptions: envoy_v3.TCPKeepaliveSocketOptions(),
 	}

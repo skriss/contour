@@ -19,7 +19,7 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
-	contour_api_v1alpha1 "github.com/projectcontour/contour/apis/projectcontour/v1alpha1"
+	envoygateway_api_v1alpha1 "github.com/projectcontour/contour/apis/envoygateway/v1alpha1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -151,24 +151,24 @@ func (r *gatewayClassReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	if params != nil {
 		var invalidParamsMessages []string
 
-		if params.Spec.Envoy != nil {
-			switch params.Spec.Envoy.WorkloadType {
+		if params.Spec.DataPlane != nil {
+			switch params.Spec.DataPlane.WorkloadType {
 			// valid values, nothing to do
-			case "", contour_api_v1alpha1.WorkloadTypeDaemonSet, contour_api_v1alpha1.WorkloadTypeDeployment:
+			case "", envoygateway_api_v1alpha1.WorkloadTypeDaemonSet, envoygateway_api_v1alpha1.WorkloadTypeDeployment:
 			// invalid value, set message
 			default:
-				msg := fmt.Sprintf("invalid ContourDeployment spec.envoy.workloadType %q, must be DaemonSet or Deployment", params.Spec.Envoy.WorkloadType)
+				msg := fmt.Sprintf("invalid ContourDeployment spec.envoy.workloadType %q, must be DaemonSet or Deployment", params.Spec.DataPlane.WorkloadType)
 				invalidParamsMessages = append(invalidParamsMessages, msg)
 			}
 
-			if params.Spec.Envoy.NetworkPublishing != nil {
-				switch params.Spec.Envoy.NetworkPublishing.Type {
+			if params.Spec.DataPlane.NetworkPublishing != nil {
+				switch params.Spec.DataPlane.NetworkPublishing.Type {
 				// valid values, nothing to do
-				case "", contour_api_v1alpha1.LoadBalancerServicePublishingType, contour_api_v1alpha1.NodePortServicePublishingType, contour_api_v1alpha1.ClusterIPServicePublishingType:
+				case "", envoygateway_api_v1alpha1.LoadBalancerServicePublishingType, envoygateway_api_v1alpha1.NodePortServicePublishingType, envoygateway_api_v1alpha1.ClusterIPServicePublishingType:
 				// invalid value, set message
 				default:
 					msg := fmt.Sprintf("invalid ContourDeployment spec.envoy.networkPublishing.type %q, must be LoadBalancerService, NoderPortService or ClusterIPService",
-						params.Spec.Envoy.NetworkPublishing.Type)
+						params.Spec.DataPlane.NetworkPublishing.Type)
 					invalidParamsMessages = append(invalidParamsMessages, msg)
 				}
 			}
@@ -237,7 +237,7 @@ func (r *gatewayClassReconciler) setAcceptedCondition(
 
 // isValidParametersRef returns true if the provided ParametersReference is
 // to a ContourDeployment resource that exists.
-func (r *gatewayClassReconciler) isValidParametersRef(ctx context.Context, ref *gatewayapi_v1alpha2.ParametersReference) (bool, *contour_api_v1alpha1.ContourDeployment, error) {
+func (r *gatewayClassReconciler) isValidParametersRef(ctx context.Context, ref *gatewayapi_v1alpha2.ParametersReference) (bool, *envoygateway_api_v1alpha1.EnvoyGatewayDeployment, error) {
 	if ref == nil {
 		return true, nil, nil
 	}
@@ -251,7 +251,7 @@ func (r *gatewayClassReconciler) isValidParametersRef(ctx context.Context, ref *
 		Name:      ref.Name,
 	}
 
-	params := &contour_api_v1alpha1.ContourDeployment{}
+	params := &envoygateway_api_v1alpha1.EnvoyGatewayDeployment{}
 	if err := r.client.Get(ctx, key, params); err != nil {
 		if errors.IsNotFound(err) {
 			return false, nil, nil
@@ -266,7 +266,7 @@ func isContourDeploymentRef(ref *gatewayapi_v1alpha2.ParametersReference) bool {
 	if ref == nil {
 		return false
 	}
-	if string(ref.Group) != contour_api_v1alpha1.GroupVersion.Group {
+	if string(ref.Group) != envoygateway_api_v1alpha1.GroupVersion.Group {
 		return false
 	}
 	if string(ref.Kind) != "ContourDeployment" {

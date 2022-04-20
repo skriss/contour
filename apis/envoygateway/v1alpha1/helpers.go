@@ -15,24 +15,10 @@ package v1alpha1
 
 import (
 	"fmt"
-
-	contour_api_v1 "github.com/projectcontour/contour/apis/projectcontour/v1"
 )
 
-// GetConditionFor returns the a pointer to the condition for a given type,
-// or nil if there are none currently present.
-func (status *ExtensionServiceStatus) GetConditionFor(condType string) *contour_api_v1.DetailedCondition {
-	for i, cond := range status.Conditions {
-		if cond.Type == condType {
-			return &status.Conditions[i]
-		}
-	}
-
-	return nil
-}
-
 // Validate configuration that is not already covered by CRD validation.
-func (c *ContourConfigurationSpec) Validate() error {
+func (c *EnvoyGatewayConfigurationSpec) Validate() error {
 	// Validation of root configuration fields.
 	if err := endpointsInConfict(c.Health, c.Metrics); err != nil {
 		return fmt.Errorf("invalid contour configuration: %v", err)

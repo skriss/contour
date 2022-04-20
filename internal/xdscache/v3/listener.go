@@ -24,11 +24,11 @@ import (
 	envoy_tls_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/golang/protobuf/proto"
-	contour_api_v1alpha1 "github.com/projectcontour/contour/apis/projectcontour/v1alpha1"
+	envoygateway_api_v1alpha1 "github.com/projectcontour/contour/apis/envoygateway/v1alpha1"
 	"github.com/projectcontour/contour/internal/contour"
-	"github.com/projectcontour/contour/internal/contourconfig"
 	"github.com/projectcontour/contour/internal/dag"
 	envoy_v3 "github.com/projectcontour/contour/internal/envoy/v3"
+	"github.com/projectcontour/contour/internal/envoygatewayconfig"
 	"github.com/projectcontour/contour/internal/protobuf"
 	"github.com/projectcontour/contour/internal/sorter"
 	"github.com/projectcontour/contour/internal/timeout"
@@ -98,12 +98,12 @@ type ListenerConfig struct {
 	// AccessLogType defines if Envoy logs should be output as Envoy's default or JSON.
 	// Valid values: 'envoy', 'json'
 	// If not set, defaults to 'envoy'
-	AccessLogType contour_api_v1alpha1.AccessLogType
+	AccessLogType envoygateway_api_v1alpha1.AccessLogType
 
 	// AccessLogFields sets the fields that should be shown in JSON logs.
 	// Valid entries are the keys from internal/envoy/accesslog.go:jsonheaders
 	// Defaults to a particular set of fields.
-	AccessLogFields contour_api_v1alpha1.AccessLogFields
+	AccessLogFields envoygateway_api_v1alpha1.AccessLogFields
 
 	// AccessLogFormatString sets the format string to be used for text based access logs.
 	// Defaults to empty to defer to Envoy's default log format.
@@ -113,10 +113,10 @@ type ListenerConfig struct {
 	AccessLogFormatterExtensions []string
 
 	// AccessLogLevel defines the logging level for access log.
-	AccessLogLevel contour_api_v1alpha1.AccessLogLevel
+	AccessLogLevel envoygateway_api_v1alpha1.AccessLogLevel
 
 	// Timeouts holds Listener timeout settings.
-	Timeouts contourconfig.Timeouts
+	Timeouts envoygatewayconfig.Timeouts
 
 	// AllowChunkedLength enables setting allow_chunked_length on the HTTP1 options for all
 	// listeners.
@@ -233,11 +233,11 @@ func (lvc *ListenerConfig) accesslogType() string {
 
 // accesslogFields returns the access log fields that should be configured
 // for Envoy, or a default set if not configured.
-func (lvc *ListenerConfig) accesslogFields() contour_api_v1alpha1.AccessLogFields {
+func (lvc *ListenerConfig) accesslogFields() envoygateway_api_v1alpha1.AccessLogFields {
 	if lvc.AccessLogFields != nil {
 		return lvc.AccessLogFields
 	}
-	return contour_api_v1alpha1.DefaultFields
+	return envoygateway_api_v1alpha1.DefaultFields
 }
 
 func (lvc *ListenerConfig) newInsecureAccessLog() []*envoy_accesslog_v3.AccessLog {
@@ -281,8 +281,8 @@ type ListenerCache struct {
 // NewListenerCache returns an instance of a ListenerCache
 func NewListenerCache(
 	listenerConfig ListenerConfig,
-	metricsConfig contour_api_v1alpha1.MetricsConfig,
-	healthConfig contour_api_v1alpha1.HealthConfig,
+	metricsConfig envoygateway_api_v1alpha1.MetricsConfig,
+	healthConfig envoygateway_api_v1alpha1.HealthConfig,
 	adminPort int,
 ) *ListenerCache {
 	listenerCache := &ListenerCache{

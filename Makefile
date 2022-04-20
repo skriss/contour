@@ -238,7 +238,7 @@ generate-gateway-crd-yaml:
 .PHONY: generate-api-docs
 generate-api-docs:
 	@echo "Generating API documentation..."
-	@./hack/generate-api-docs.sh github.com/projectcontour/contour/apis/projectcontour
+	@./hack/generate-api-docs.sh github.com/projectcontour/contour/apis/envoygateway
 
 .PHONY: generate-metrics-docs
 generate-metrics-docs:

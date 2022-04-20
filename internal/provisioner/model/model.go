@@ -14,7 +14,7 @@
 package model
 
 import (
-	contourv1alpha1 "github.com/projectcontour/contour/apis/projectcontour/v1alpha1"
+	contourv1alpha1 "github.com/projectcontour/contour/apis/envoygateway/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
@@ -167,7 +167,7 @@ type ContourSpec struct {
 	EnableExternalNameService *bool `json:"enableExternalNameService,omitempty"`
 
 	// RuntimeSettings is any user-defined ContourConfigurationSpec to use when provisioning.
-	RuntimeSettings *contourv1alpha1.ContourConfigurationSpec
+	RuntimeSettings *contourv1alpha1.EnvoyGatewayConfigurationSpec
 
 	// EnvoyWorkloadType is the way to deploy Envoy, either "DaemonSet" or "Deployment".
 	EnvoyWorkloadType WorkloadType

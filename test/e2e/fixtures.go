@@ -21,7 +21,7 @@ import (
 	"os"
 
 	"github.com/onsi/ginkgo/v2"
-	contour_api_v1alpha1 "github.com/projectcontour/contour/apis/projectcontour/v1alpha1"
+	envoygateway_api_v1alpha1 "github.com/projectcontour/contour/apis/envoygateway/v1alpha1"
 	"github.com/projectcontour/contour/internal/contourconfig"
 	"github.com/projectcontour/contour/pkg/config"
 	"github.com/stretchr/testify/require"
@@ -339,45 +339,45 @@ func DefaultContourConfigFileParams() *config.Parameters {
 }
 
 // DefaultContourConfiguration returns a default ContourConfiguration object.
-func DefaultContourConfiguration() *contour_api_v1alpha1.ContourConfiguration {
-	return &contour_api_v1alpha1.ContourConfiguration{
+func DefaultContourConfiguration() *envoygateway_api_v1alpha1.EnvoyGatewayConfiguration {
+	return &envoygateway_api_v1alpha1.EnvoyGatewayConfiguration{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "ingress",
 			Namespace: "projectcontour",
 		},
-		Spec: contour_api_v1alpha1.ContourConfigurationSpec{
-			XDSServer: &contour_api_v1alpha1.XDSServerConfig{
+		Spec: envoygateway_api_v1alpha1.EnvoyGatewayConfigurationSpec{
+			XDSServer: &envoygateway_api_v1alpha1.XDSServerConfig{
 				Type:    XDSServerTypeFromEnv(),
 				Address: "0.0.0.0",
 				Port:    8001,
-				TLS: &contour_api_v1alpha1.TLS{
+				TLS: &envoygateway_api_v1alpha1.TLS{
 					CAFile:   "/certs/ca.crt",
 					CertFile: "/certs/tls.crt",
 					KeyFile:  "/certs/tls.key",
 					Insecure: pointer.Bool(false),
 				},
 			},
-			Debug: &contour_api_v1alpha1.DebugConfig{
+			Debug: &envoygateway_api_v1alpha1.DebugConfig{
 				Address:                 "127.0.0.1",
 				Port:                    6060,
-				DebugLogLevel:           contour_api_v1alpha1.InfoLog,
+				DebugLogLevel:           envoygateway_api_v1alpha1.InfoLog,
 				KubernetesDebugLogLevel: contourconfig.UIntPtr(0),
 			},
-			Health: &contour_api_v1alpha1.HealthConfig{
+			Health: &envoygateway_api_v1alpha1.HealthConfig{
 				Address: "0.0.0.0",
 				Port:    8000,
 			},
-			Envoy: &contour_api_v1alpha1.EnvoyConfig{
-				DefaultHTTPVersions: []contour_api_v1alpha1.HTTPVersionType{
+			Envoy: &envoygateway_api_v1alpha1.EnvoyConfig{
+				DefaultHTTPVersions: []envoygateway_api_v1alpha1.HTTPVersionType{
 					"HTTP/1.1", "HTTP/2",
 				},
-				Listener: &contour_api_v1alpha1.EnvoyListenerConfig{
+				Listener: &envoygateway_api_v1alpha1.EnvoyListenerConfig{
 					UseProxyProto:             pointer.Bool(false),
 					DisableAllowChunkedLength: pointer.Bool(false),
 					ConnectionBalancer:        "",
-					TLS: &contour_api_v1alpha1.EnvoyTLS{
+					TLS: &envoygateway_api_v1alpha1.EnvoyTLS{
 						MinimumProtocolVersion: "1.2",
-						CipherSuites: []contour_api_v1alpha1.TLSCipherType{
+						CipherSuites: []envoygateway_api_v1alpha1.TLSCipherType{
 							"[ECDHE-ECDSA-AES128-GCM-SHA256|ECDHE-ECDSA-CHACHA20-POLY1305]",
 							"[ECDHE-RSA-AES128-GCM-SHA256|ECDHE-RSA-CHACHA20-POLY1305]",
 							"ECDHE-ECDSA-AES256-GCM-SHA384",
@@ -385,43 +385,43 @@ func DefaultContourConfiguration() *contour_api_v1alpha1.ContourConfiguration {
 						},
 					},
 				},
-				Service: &contour_api_v1alpha1.NamespacedName{
+				Service: &envoygateway_api_v1alpha1.NamespacedName{
 					Name:      "envoy",
 					Namespace: "projectcontour",
 				},
-				HTTPListener: &contour_api_v1alpha1.EnvoyListener{
+				HTTPListener: &envoygateway_api_v1alpha1.EnvoyListener{
 					Address:   "0.0.0.0",
 					Port:      8080,
 					AccessLog: "/dev/stdout",
 				},
-				HTTPSListener: &contour_api_v1alpha1.EnvoyListener{
+				HTTPSListener: &envoygateway_api_v1alpha1.EnvoyListener{
 					Address:   "0.0.0.0",
 					Port:      8443,
 					AccessLog: "/dev/stdout",
 				},
-				Health: &contour_api_v1alpha1.HealthConfig{
+				Health: &envoygateway_api_v1alpha1.HealthConfig{
 					Address: "0.0.0.0",
 					Port:    8002,
 				},
-				Metrics: &contour_api_v1alpha1.MetricsConfig{
+				Metrics: &envoygateway_api_v1alpha1.MetricsConfig{
 					Address: "0.0.0.0",
 					Port:    8002,
 				},
-				Logging: &contour_api_v1alpha1.EnvoyLogging{
-					AccessLogFormat: contour_api_v1alpha1.EnvoyAccessLog,
+				Logging: &envoygateway_api_v1alpha1.EnvoyLogging{
+					AccessLogFormat: envoygateway_api_v1alpha1.EnvoyAccessLog,
 				},
-				Cluster: &contour_api_v1alpha1.ClusterParameters{
-					DNSLookupFamily: contour_api_v1alpha1.AutoClusterDNSFamily,
+				Cluster: &envoygateway_api_v1alpha1.ClusterParameters{
+					DNSLookupFamily: envoygateway_api_v1alpha1.AutoClusterDNSFamily,
 				},
-				Network: &contour_api_v1alpha1.NetworkParameters{
+				Network: &envoygateway_api_v1alpha1.NetworkParameters{
 					EnvoyAdminPort: pointer.Int(9001),
 				},
 			},
-			HTTPProxy: &contour_api_v1alpha1.HTTPProxyConfig{
+			HTTPProxy: &envoygateway_api_v1alpha1.HTTPProxyConfig{
 				DisablePermitInsecure: pointer.Bool(false),
 			},
 			EnableExternalNameService: pointer.Bool(false),
-			Metrics: &contour_api_v1alpha1.MetricsConfig{
+			Metrics: &envoygateway_api_v1alpha1.MetricsConfig{
 				Address: "0.0.0.0",
 				Port:    8000,
 			},
@@ -433,12 +433,12 @@ func IngressPathTypePtr(val networkingv1.PathType) *networkingv1.PathType {
 	return &val
 }
 
-func XDSServerTypeFromEnv() contour_api_v1alpha1.XDSServerType {
+func XDSServerTypeFromEnv() envoygateway_api_v1alpha1.XDSServerType {
 	// Default to contour if not provided.
-	serverType := contour_api_v1alpha1.ContourServerType
+	serverType := envoygateway_api_v1alpha1.ContourServerType
 	typeFromEnv, found := os.LookupEnv("CONTOUR_E2E_XDS_SERVER_TYPE")
 	if found {
-		serverType = contour_api_v1alpha1.XDSServerType(typeFromEnv)
+		serverType = envoygateway_api_v1alpha1.XDSServerType(typeFromEnv)
 	}
 	return serverType
 }

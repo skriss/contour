@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package contourconfig
+package envoygatewayconfig
 
 import (
 	"context"
@@ -209,7 +209,7 @@ func TestEnsureContourConfig(t *testing.T) {
 			}
 			client := clientBuilder.Build()
 
-			require.NoError(t, EnsureContourConfig(context.Background(), client, tc.contour))
+			require.NoError(t, EnsureEnvoyGatewayConfig(context.Background(), client, tc.contour))
 
 			got := &contour_api_v1alpha1.ContourConfiguration{}
 			key := types.NamespacedName{
@@ -323,7 +323,7 @@ func TestEnsureContourConfigDeleted(t *testing.T) {
 			// We don't have the ability to inject fake errors into the fake client,
 			// so all code paths we can trigger in this test are expected to return
 			// no error.
-			require.NoError(t, EnsureContourConfigDeleted(context.Background(), client, tc.contour))
+			require.NoError(t, EnsureEnvoyGatewayConfigDeleted(context.Background(), client, tc.contour))
 
 			remaining := &contour_api_v1alpha1.ContourConfiguration{}
 			key := types.NamespacedName{

@@ -20,18 +20,18 @@ import (
 	envoy_req_without_query_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/formatter/req_without_query/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	_struct "github.com/golang/protobuf/ptypes/struct"
-	contour_api_v1alpha1 "github.com/projectcontour/contour/apis/projectcontour/v1alpha1"
+	envoygateway_api_v1alpha1 "github.com/projectcontour/contour/apis/envoygateway/v1alpha1"
 	"github.com/projectcontour/contour/internal/protobuf"
 )
 
 // FileAccessLogEnvoy returns a new file based access log filter
-func FileAccessLogEnvoy(path string, format string, extensions []string, level contour_api_v1alpha1.AccessLogLevel) []*envoy_accesslog_v3.AccessLog {
-	if level == contour_api_v1alpha1.LogLevelDisabled {
+func FileAccessLogEnvoy(path string, format string, extensions []string, level envoygateway_api_v1alpha1.AccessLogLevel) []*envoy_accesslog_v3.AccessLog {
+	if level == envoygateway_api_v1alpha1.LogLevelDisabled {
 		return nil
 	}
 
 	var filter *envoy_accesslog_v3.AccessLogFilter
-	if level == contour_api_v1alpha1.LogLevelError {
+	if level == envoygateway_api_v1alpha1.LogLevelError {
 		filter = filterOnlyErrors()
 	}
 
@@ -67,13 +67,13 @@ func FileAccessLogEnvoy(path string, format string, extensions []string, level c
 
 // FileAccessLogJSON returns a new file based access log filter
 // that will log in JSON format
-func FileAccessLogJSON(path string, fields contour_api_v1alpha1.AccessLogFields, extensions []string, level contour_api_v1alpha1.AccessLogLevel) []*envoy_accesslog_v3.AccessLog {
-	if level == contour_api_v1alpha1.LogLevelDisabled {
+func FileAccessLogJSON(path string, fields envoygateway_api_v1alpha1.AccessLogFields, extensions []string, level envoygateway_api_v1alpha1.AccessLogLevel) []*envoy_accesslog_v3.AccessLog {
+	if level == envoygateway_api_v1alpha1.LogLevelDisabled {
 		return nil
 	}
 
 	var filter *envoy_accesslog_v3.AccessLogFilter
-	if level == contour_api_v1alpha1.LogLevelError {
+	if level == envoygateway_api_v1alpha1.LogLevelError {
 		filter = filterOnlyErrors()
 	}
 
