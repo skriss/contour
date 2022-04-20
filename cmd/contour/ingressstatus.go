@@ -50,7 +50,6 @@ type loadBalancerStatusWriter struct {
 	cache                 cache.Cache
 	lbStatus              chan v1.LoadBalancerStatus
 	statusUpdater         k8s.StatusUpdater
-	ingressClassNames     []string
 	gatewayControllerName string
 	gatewayRef            *types.NamespacedName
 }
@@ -63,15 +62,9 @@ func (isw *loadBalancerStatusWriter) Start(ctx context.Context) error {
 	u := &k8s.StatusAddressUpdater{
 		Logger: func() logrus.FieldLogger {
 			// Configure the StatusAddressUpdater logger.
-			log := isw.log.WithField("context", "StatusAddressUpdater")
-			if len(isw.ingressClassNames) > 0 {
-				return log.WithField("target-ingress-classes", isw.ingressClassNames)
-			}
-
-			return log
+			return isw.log.WithField("context", "StatusAddressUpdater")
 		}(),
 		Cache:                 isw.cache,
-		IngressClassNames:     isw.ingressClassNames,
 		GatewayControllerName: isw.gatewayControllerName,
 		GatewayRef:            isw.gatewayRef,
 		StatusUpdater:         isw.statusUpdater,

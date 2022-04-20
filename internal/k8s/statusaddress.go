@@ -18,16 +18,10 @@ import (
 	"fmt"
 	"sync"
 
-	contour_api_v1 "github.com/projectcontour/contour/apis/projectcontour/v1"
-	"github.com/projectcontour/contour/internal/annotation"
 	"github.com/projectcontour/contour/internal/gatewayapi"
-	"github.com/projectcontour/contour/internal/ingressclass"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
-	networking_v1 "k8s.io/api/networking/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gatewayapi_v1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
@@ -42,7 +36,6 @@ type StatusAddressUpdater struct {
 	Logger                logrus.FieldLogger
 	Cache                 cache.Cache
 	LBStatus              v1.LoadBalancerStatus
-	IngressClassNames     []string
 	GatewayControllerName string
 	GatewayRef            *types.NamespacedName
 	StatusUpdater         StatusUpdater
@@ -74,64 +67,7 @@ func (s *StatusAddressUpdater) OnAdd(obj interface{}) {
 		return
 	}
 
-	logNoMatch := func(logger logrus.FieldLogger, obj metav1.Object) {
-		logger.WithField("name", obj.GetName()).
-			WithField("namespace", obj.GetNamespace()).
-			WithField("ingress-class-annotation", annotation.IngressClass(obj)).
-			WithField("kind", KindOf(obj)).
-			WithField("target-ingress-classes", s.IngressClassNames).
-			Debug("unmatched ingress class, skipping status address update")
-	}
-
 	switch o := obj.(type) {
-	case *networking_v1.Ingress:
-		if !ingressclass.MatchesIngress(o, s.IngressClassNames) {
-			logNoMatch(s.Logger.WithField("ingress-class-name", pointer.StringPtrDerefOr(o.Spec.IngressClassName, "")), o)
-			return
-		}
-
-		s.StatusUpdater.Send(NewStatusUpdate(
-			o.Name,
-			o.Namespace,
-			&networking_v1.Ingress{},
-			StatusMutatorFunc(func(obj client.Object) client.Object {
-				ing, ok := obj.(*networking_v1.Ingress)
-				if !ok {
-					panic(fmt.Sprintf("Unsupported object %s/%s in status Address mutator",
-						obj.GetName(), obj.GetNamespace(),
-					))
-				}
-
-				dco := ing.DeepCopy()
-				dco.Status.LoadBalancer = loadBalancerStatus
-				return dco
-			}),
-		))
-
-	case *contour_api_v1.HTTPProxy:
-		if !ingressclass.MatchesHTTPProxy(o, s.IngressClassNames) {
-			logNoMatch(s.Logger, o)
-			return
-		}
-
-		s.StatusUpdater.Send(NewStatusUpdate(
-			o.Name,
-			o.Namespace,
-			&contour_api_v1.HTTPProxy{},
-			StatusMutatorFunc(func(obj client.Object) client.Object {
-				proxy, ok := obj.(*contour_api_v1.HTTPProxy)
-				if !ok {
-					panic(fmt.Sprintf("Unsupported object %s/%s in status Address mutator",
-						obj.GetName(), obj.GetNamespace(),
-					))
-				}
-
-				dco := proxy.DeepCopy()
-				dco.Status.LoadBalancer = loadBalancerStatus
-				return dco
-			}),
-		))
-
 	case *gatewayapi_v1alpha2.Gateway:
 		switch {
 		// Specific Gateway configured: check if the added Gateway

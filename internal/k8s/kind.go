@@ -14,10 +14,7 @@
 package k8s
 
 import (
-	contour_api_v1 "github.com/projectcontour/contour/apis/projectcontour/v1"
-	"github.com/projectcontour/contour/apis/projectcontour/v1alpha1"
 	v1 "k8s.io/api/core/v1"
-	networking_v1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -39,16 +36,8 @@ func KindOf(obj interface{}) string {
 			return "Service"
 		case *v1.Endpoints:
 			return "Endpoints"
-		case *networking_v1.Ingress:
-			return "Ingress"
-		case *contour_api_v1.HTTPProxy:
-			return "HTTPProxy"
 		case *gatewayapi_v1alpha2.HTTPRoute:
 			return "HTTPRoute"
-		case *contour_api_v1.TLSCertificateDelegation:
-			return "TLSCertificateDelegation"
-		case *v1alpha1.ExtensionService:
-			return "ExtensionService"
 		case *unstructured.Unstructured:
 			return obj.GetKind()
 		default:
@@ -70,12 +59,6 @@ func VersionOf(obj interface{}) string {
 		switch obj := obj.(type) {
 		case *v1.Secret, *v1.Service, *v1.Endpoints:
 			return v1.SchemeGroupVersion.String()
-		case *networking_v1.Ingress:
-			return networking_v1.SchemeGroupVersion.String()
-		case *contour_api_v1.HTTPProxy, *contour_api_v1.TLSCertificateDelegation:
-			return contour_api_v1.GroupVersion.String()
-		case *v1alpha1.ExtensionService:
-			return v1alpha1.GroupVersion.String()
 		case *unstructured.Unstructured:
 			return obj.GetAPIVersion()
 		default:

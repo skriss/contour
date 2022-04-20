@@ -15,23 +15,18 @@ package dag
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"sync"
 
-	contour_api_v1 "github.com/projectcontour/contour/apis/projectcontour/v1"
 	contour_api_v1alpha1 "github.com/projectcontour/contour/apis/projectcontour/v1alpha1"
 	"github.com/projectcontour/contour/internal/annotation"
-	"github.com/projectcontour/contour/internal/ingressclass"
 	"github.com/projectcontour/contour/internal/k8s"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
-	networking_v1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gatewayapi_v1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 )
@@ -56,18 +51,14 @@ type KubernetesCache struct {
 	// Secrets that are referred from the configuration file.
 	ConfiguredSecretRefs []*types.NamespacedName
 
-	ingresses                 map[types.NamespacedName]*networking_v1.Ingress
-	httpproxies               map[types.NamespacedName]*contour_api_v1.HTTPProxy
-	secrets                   map[types.NamespacedName]*v1.Secret
-	tlscertificatedelegations map[types.NamespacedName]*contour_api_v1.TLSCertificateDelegation
-	services                  map[types.NamespacedName]*v1.Service
-	namespaces                map[string]*v1.Namespace
-	gatewayclass              *gatewayapi_v1alpha2.GatewayClass
-	gateway                   *gatewayapi_v1alpha2.Gateway
-	httproutes                map[types.NamespacedName]*gatewayapi_v1alpha2.HTTPRoute
-	tlsroutes                 map[types.NamespacedName]*gatewayapi_v1alpha2.TLSRoute
-	referencepolicies         map[types.NamespacedName]*gatewayapi_v1alpha2.ReferencePolicy
-	extensions                map[types.NamespacedName]*contour_api_v1alpha1.ExtensionService
+	secrets           map[types.NamespacedName]*v1.Secret
+	services          map[types.NamespacedName]*v1.Service
+	namespaces        map[string]*v1.Namespace
+	gatewayclass      *gatewayapi_v1alpha2.GatewayClass
+	gateway           *gatewayapi_v1alpha2.Gateway
+	httproutes        map[types.NamespacedName]*gatewayapi_v1alpha2.HTTPRoute
+	tlsroutes         map[types.NamespacedName]*gatewayapi_v1alpha2.TLSRoute
+	referencepolicies map[types.NamespacedName]*gatewayapi_v1alpha2.ReferencePolicy
 
 	Client client.Reader
 
@@ -78,16 +69,12 @@ type KubernetesCache struct {
 
 // init creates the internal cache storage. It is called implicitly from the public API.
 func (kc *KubernetesCache) init() {
-	kc.ingresses = make(map[types.NamespacedName]*networking_v1.Ingress)
-	kc.httpproxies = make(map[types.NamespacedName]*contour_api_v1.HTTPProxy)
 	kc.secrets = make(map[types.NamespacedName]*v1.Secret)
-	kc.tlscertificatedelegations = make(map[types.NamespacedName]*contour_api_v1.TLSCertificateDelegation)
 	kc.services = make(map[types.NamespacedName]*v1.Service)
 	kc.namespaces = make(map[string]*v1.Namespace)
 	kc.httproutes = make(map[types.NamespacedName]*gatewayapi_v1alpha2.HTTPRoute)
 	kc.referencepolicies = make(map[types.NamespacedName]*gatewayapi_v1alpha2.ReferencePolicy)
 	kc.tlsroutes = make(map[types.NamespacedName]*gatewayapi_v1alpha2.TLSRoute)
-	kc.extensions = make(map[types.NamespacedName]*contour_api_v1alpha1.ExtensionService)
 }
 
 // Insert inserts obj into the KubernetesCache.
@@ -119,39 +106,6 @@ func (kc *KubernetesCache) Insert(obj interface{}) bool {
 			return kc.serviceTriggersRebuild(obj)
 		case *v1.Namespace:
 			kc.namespaces[obj.Name] = obj
-			return true
-		case *networking_v1.Ingress:
-			if !ingressclass.MatchesIngress(obj, kc.IngressClassNames) {
-				// We didn't get a match so report this object is being ignored.
-				kc.WithField("name", obj.GetName()).
-					WithField("namespace", obj.GetNamespace()).
-					WithField("kind", k8s.KindOf(obj)).
-					WithField("ingress-class-annotation", annotation.IngressClass(obj)).
-					WithField("ingress-class-name", pointer.StringPtrDerefOr(obj.Spec.IngressClassName, "")).
-					WithField("target-ingress-classes", kc.IngressClassNames).
-					Debug("ignoring Ingress with unmatched ingress class")
-				return false
-			}
-
-			kc.ingresses[k8s.NamespacedNameOf(obj)] = obj
-			return true
-		case *contour_api_v1.HTTPProxy:
-			if !ingressclass.MatchesHTTPProxy(obj, kc.IngressClassNames) {
-				// We didn't get a match so report this object is being ignored.
-				kc.WithField("name", obj.GetName()).
-					WithField("namespace", obj.GetNamespace()).
-					WithField("kind", k8s.KindOf(obj)).
-					WithField("ingress-class-annotation", annotation.IngressClass(obj)).
-					WithField("ingress-class-name", obj.Spec.IngressClassName).
-					WithField("target-ingress-classes", kc.IngressClassNames).
-					Debug("ignoring HTTPProxy with unmatched ingress class")
-				return false
-			}
-
-			kc.httpproxies[k8s.NamespacedNameOf(obj)] = obj
-			return true
-		case *contour_api_v1.TLSCertificateDelegation:
-			kc.tlscertificatedelegations[k8s.NamespacedNameOf(obj)] = obj
 			return true
 		case *gatewayapi_v1alpha2.GatewayClass:
 			switch {
@@ -201,9 +155,6 @@ func (kc *KubernetesCache) Insert(obj interface{}) bool {
 			return true
 		case *gatewayapi_v1alpha2.ReferencePolicy:
 			kc.referencepolicies[k8s.NamespacedNameOf(obj)] = obj
-			return true
-		case *contour_api_v1alpha1.ExtensionService:
-			kc.extensions[k8s.NamespacedNameOf(obj)] = obj
 			return true
 		case *contour_api_v1alpha1.ContourConfiguration:
 			return false
@@ -274,21 +225,6 @@ func (kc *KubernetesCache) remove(obj interface{}) bool {
 		_, ok := kc.namespaces[obj.Name]
 		delete(kc.namespaces, obj.Name)
 		return ok
-	case *networking_v1.Ingress:
-		m := k8s.NamespacedNameOf(obj)
-		_, ok := kc.ingresses[m]
-		delete(kc.ingresses, m)
-		return ok
-	case *contour_api_v1.HTTPProxy:
-		m := k8s.NamespacedNameOf(obj)
-		_, ok := kc.httpproxies[m]
-		delete(kc.httpproxies, m)
-		return ok
-	case *contour_api_v1.TLSCertificateDelegation:
-		m := k8s.NamespacedNameOf(obj)
-		_, ok := kc.tlscertificatedelegations[m]
-		delete(kc.tlscertificatedelegations, m)
-		return ok
 	case *gatewayapi_v1alpha2.GatewayClass:
 		switch {
 		case kc.ConfiguredGatewayToCache != nil:
@@ -328,11 +264,6 @@ func (kc *KubernetesCache) remove(obj interface{}) bool {
 		_, ok := kc.referencepolicies[m]
 		delete(kc.referencepolicies, m)
 		return ok
-	case *contour_api_v1alpha1.ExtensionService:
-		m := k8s.NamespacedNameOf(obj)
-		_, ok := kc.extensions[m]
-		delete(kc.extensions, m)
-		return ok
 	case *contour_api_v1alpha1.ContourConfiguration:
 		return false
 	default:
@@ -345,49 +276,6 @@ func (kc *KubernetesCache) remove(obj interface{}) bool {
 // serviceTriggersRebuild returns true if this service is referenced
 // by an Ingress or HTTPProxy in this cache.
 func (kc *KubernetesCache) serviceTriggersRebuild(service *v1.Service) bool {
-	for _, ingress := range kc.ingresses {
-		if ingress.Namespace != service.Namespace {
-			continue
-		}
-		if backend := ingress.Spec.DefaultBackend; backend != nil {
-			if backend.Service.Name == service.Name {
-				return true
-			}
-		}
-
-		for _, rule := range ingress.Spec.Rules {
-			http := rule.IngressRuleValue.HTTP
-			if http == nil {
-				continue
-			}
-			for _, path := range http.Paths {
-				if path.Backend.Service.Name == service.Name {
-					return true
-				}
-			}
-		}
-	}
-
-	for _, proxy := range kc.httpproxies {
-		if proxy.Namespace != service.Namespace {
-			continue
-		}
-		for _, route := range proxy.Spec.Routes {
-			for _, s := range route.Services {
-				if s.Name == service.Name {
-					return true
-				}
-			}
-		}
-		if tcpproxy := proxy.Spec.TCPProxy; tcpproxy != nil {
-			for _, s := range tcpproxy.Services {
-				if s.Name == service.Name {
-					return true
-				}
-			}
-		}
-	}
-
 	for _, route := range kc.httproutes {
 		for _, rule := range route.Spec.Rules {
 			for _, backend := range rule.BackendRefs {
@@ -419,69 +307,6 @@ func (kc *KubernetesCache) secretTriggersRebuild(secret *v1.Secret) bool {
 		// does this so don't reproduce the logic and just assume for the moment
 		// that any change to a CA secret will trigger a rebuild.
 		return true
-	}
-
-	delegations := make(map[string]bool) // targetnamespace/secretname to bool
-
-	// TODO(youngnick): Check if this is required.
-	for _, d := range kc.tlscertificatedelegations {
-		for _, cd := range d.Spec.Delegations {
-			for _, n := range cd.TargetNamespaces {
-				delegations[n+"/"+cd.SecretName] = true
-			}
-		}
-	}
-
-	for _, ingress := range kc.ingresses {
-		if ingress.Namespace == secret.Namespace {
-			for _, tls := range ingress.Spec.TLS {
-				if tls.SecretName == secret.Name {
-					return true
-				}
-			}
-		}
-		if delegations[ingress.Namespace+"/"+secret.Name] {
-			for _, tls := range ingress.Spec.TLS {
-				if tls.SecretName == secret.Namespace+"/"+secret.Name {
-					return true
-				}
-			}
-		}
-
-		if delegations["*/"+secret.Name] {
-			for _, tls := range ingress.Spec.TLS {
-				if tls.SecretName == secret.Namespace+"/"+secret.Name {
-					return true
-				}
-			}
-		}
-	}
-
-	for _, proxy := range kc.httpproxies {
-		vh := proxy.Spec.VirtualHost
-		if vh == nil {
-			// not a root ingress
-			continue
-		}
-		tls := vh.TLS
-		if tls == nil {
-			// no tls spec
-			continue
-		}
-
-		if proxy.Namespace == secret.Namespace && tls.SecretName == secret.Name {
-			return true
-		}
-		if delegations[proxy.Namespace+"/"+secret.Name] {
-			if tls.SecretName == secret.Namespace+"/"+secret.Name {
-				return true
-			}
-		}
-		if delegations["*/"+secret.Name] {
-			if tls.SecretName == secret.Namespace+"/"+secret.Name {
-				return true
-			}
-		}
 	}
 
 	// Secrets referred by the configuration file shall also trigger rebuild.
@@ -532,64 +357,6 @@ func (kc *KubernetesCache) LookupSecret(name types.NamespacedName, validate func
 	}
 
 	return s, nil
-}
-
-func (kc *KubernetesCache) LookupUpstreamValidation(uv *contour_api_v1.UpstreamValidation, caCertificate types.NamespacedName) (*PeerValidationContext, error) {
-	if uv == nil {
-		// no upstream validation requested, nothing to do
-		return nil, nil
-	}
-
-	cacert, err := kc.LookupSecret(caCertificate, validCA)
-	if err != nil {
-		// UpstreamValidation is requested, but cert is missing or not configured
-		return nil, fmt.Errorf("invalid CA Secret %q: %s", caCertificate, err)
-	}
-
-	if uv.SubjectName == "" {
-		// UpstreamValidation is requested, but SAN is not provided
-		return nil, errors.New("missing subject alternative name")
-	}
-
-	return &PeerValidationContext{
-		CACertificate: cacert,
-		SubjectName:   uv.SubjectName,
-	}, nil
-}
-
-// DelegationPermitted returns true if the referenced secret has been delegated
-// to the namespace where the ingress object is located.
-func (kc *KubernetesCache) DelegationPermitted(secret types.NamespacedName, targetNamespace string) bool {
-	contains := func(haystack []string, needle string) bool {
-		if len(haystack) == 1 && haystack[0] == "*" {
-			return true
-		}
-		for _, h := range haystack {
-			if h == needle {
-				return true
-			}
-		}
-		return false
-	}
-
-	if secret.Namespace == targetNamespace {
-		// secret is in the same namespace as target
-		return true
-	}
-
-	for _, d := range kc.tlscertificatedelegations {
-		if d.Namespace != secret.Namespace {
-			continue
-		}
-		for _, d := range d.Spec.Delegations {
-			if contains(d.TargetNamespaces, targetNamespace) {
-				if secret.Name == d.SecretName {
-					return true
-				}
-			}
-		}
-	}
-	return false
 }
 
 func validCA(s *v1.Secret) error {
