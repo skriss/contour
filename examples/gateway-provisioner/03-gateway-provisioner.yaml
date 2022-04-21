@@ -20,6 +20,7 @@ spec:
       - args:
         - gateway-provisioner
         - --gateway-controller-name=envoyproxy.io/gateway-controller
+        - --contour-image=docker.io/envoyproxy/envoy-gateway-controller:latest
         - --metrics-addr=127.0.0.1:8080
         - --enable-leader-election
         command: ["contour"]
