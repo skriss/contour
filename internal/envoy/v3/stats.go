@@ -20,6 +20,7 @@ import (
 	http "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_tls_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	"github.com/golang/protobuf/ptypes/any"
 	contour_api_v1alpha1 "github.com/projectcontour/contour/apis/projectcontour/v1alpha1"
 	"github.com/projectcontour/contour/internal/protobuf"
 )
@@ -116,6 +117,11 @@ func filterChain(statsPrefix string, transportSocket *envoy_core_v3.TransportSoc
 					RouteSpecifier: routes,
 					HttpFilters: []*http.HttpFilter{{
 						Name: wellknown.Router,
+						ConfigType: &http.HttpFilter_TypedConfig{
+							TypedConfig: &any.Any{
+								TypeUrl: HTTPFilterRouter,
+							},
+						},
 					}},
 					NormalizePath: protobuf.Bool(true),
 				}),
