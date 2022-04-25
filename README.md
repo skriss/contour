@@ -1,57 +1,103 @@
-# Contour ![Build and Test Pull Request](https://github.com/projectcontour/contour/workflows/Build%20and%20Test%20Pull%20Request/badge.svg) [![Go Report Card](https://goreportcard.com/badge/github.com/projectcontour/contour)](https://goreportcard.com/report/github.com/projectcontour/contour) ![GitHub release](https://img.shields.io/github/release/projectcontour/contour.svg) [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0) [![Slack](https://img.shields.io/badge/slack-join%20chat-e01563.svg?logo=slack)](https://kubernetes.slack.com/messages/contour) [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/4141/badge)](https://bestpractices.coreinfrastructure.org/projects/4141)
+# Envoy Gateway - KubeCon EU 2022 Demo
+
+1. Build image
+
+    ```shell
+    REGISTRY=docker.io/envoyproxy PROJECT=envoy-gateway-controller VERSION=latest make container
+    ```
+
+2. Create kind cluster
+
+    ```shell
+    CLUSTERNAME=envoy-gateway make setup-kind-cluster
+    ```
+
+3. Load image into cluster
+
+    ```shell
+    kind --name envoy-gateway load docker-image docker.io/envoyproxy/envoy-gateway-controller:latest
+    ```
+
+4. Deploy envoy gateway provisioner
+
+    ```shell
+    kubectl apply -f examples/gateway-provisioner/
+    ```
+
+5. Create `GatewayClass`
+
+    ```shell
+    kubectl apply -f examples/envoy-gateway-demo/00-gatewayclass.yaml
+    ```
+
+    Verify it's been accepted
+    ```shell
+    kubectl describe gatewayclass envoy
+    ```
+
+    (Look for condition of `Accepted: true`.)
+
+6. Create `Gateway`
+
+    ```shell
+    kubectl apply -f examples/envoy-gateway-demo/01-gateway.yaml
+    ```
+
+    Verify it's been provisioned
+    ```shell
+    kubectl get gateway envoy-gateway-1
+    ```
+
+    (Look for an address and a `Ready: true` condition, should come up in under a minute.)
+
+7. Look at the infrastructure that's been provisioned
+
+    ```shell
+    kubectl get all
+    ```
+
+    (Look for two control plane pods and one envoy pod, all fully ready.)
+
+8. Deploy echoserver workloads
+
+    ```shell
+    kubectl apply -f examples/envoy-gateway-demo/02-echoservers.yaml
+    ```
+
+9. Create `HTTPRoute`
+
+    ```shell
+    kubectl apply -f examples/envoy-gateway-demo/03-httproute.yaml
+    ```
+
+    Verify it's been accepted
+    ```shell
+    kubectl describe httproute echo-routes
+    ```
+
+    (Look for condition of `Accepted: true`.)
+
+10. Make HTTP requests 
+
+    **Notes:**
+    - **the Gateway's address is assumed to be `172.18.255.200`, replace with actual address from the output of `kubectl get gateway envoy-gateway-1` if needed**
+    - **this step assumes you are on a Linux host so the Gateway's address is routable. If on macOS, you'll need to `kubectl port-forward` to the Gateway**
 
 
-![Contour is fun at parties!](contour.png)
+    ```shell
+    curl -i -H "Host: gateway.envoyproxy.io" 172.18.255.200/s1
+    ```
 
-## Overview
+    (Should route to echoserver-1)
 
-Contour is an Ingress controller for Kubernetes that works by deploying the [Envoy proxy](https://www.envoyproxy.io/) as a reverse proxy and load balancer.
-Contour supports dynamic configuration updates out of the box while maintaining a lightweight profile.
+    ```shell
+    curl -i -H "Host: gateway.envoyproxy.io" 172.18.255.200/s2
+    ```
 
-Contour also introduces a new ingress API ([HTTPProxy](https://projectcontour.io/docs/main/config/fundamentals/)) which is implemented via a Custom Resource Definition (CRD).
-Its goal is to expand upon the functionality of the Ingress API to allow for a richer user experience as well as solve shortcomings in the original design.
+    (Should route to echoserver-2)
 
-## Prerequisites
+    ```shell
+    curl -i -H "Host: gateway.envoyproxy.io" 172.18.255.200/any-other-prefix
+    ```
 
-See the [compatibility matrix](https://projectcontour.io/resources/compatibility-matrix/) for the Kubernetes versions Contour is supported with.
-
-RBAC must be enabled on your cluster.
-
-## Get started
-
-Getting started with Contour is as simple as one command.
-See the [Getting Started](https://projectcontour.io/getting-started) document.
-
-## Troubleshooting
-
-If you encounter issues, review the Troubleshooting section of [the docs](https://projectcontour.io/docs), [file an issue](https://github.com/projectcontour/contour/issue), or talk to us on the [#contour channel](https://kubernetes.slack.com/messages/contour) on the Kubernetes Slack server.
-
-## Contributing
-
-Thanks for taking the time to join our community and start contributing!
-
-- Please familiarize yourself with the [Code of Conduct](/CODE_OF_CONDUCT.md) before contributing.
-- See [CONTRIBUTING.md](/CONTRIBUTING.md) for information about setting up your environment, the workflow that we expect, and instructions on the developer certificate of origin that we require.
-- Check out the [open issues](https://github.com/projectcontour/contour/issues).
-- Join our Kubernetes Slack channel: [#contour](https://kubernetes.slack.com/messages/contour/)
-- Join the **Contour Community Meetings** - [schedule, notes, and recordings can be found here](https://projectcontour.io/community)
-- Find GOVERNANCE in our [Community repo](https://github.com/projectcontour/community)
-## Roadmap
-
-See [Contour's roadmap](https://github.com/projectcontour/community/blob/main/ROADMAP.md) to learn more about where we are headed.
-
-## Security
-
-### Security Audit
-
-A third party security audit was performed by Cure53 in December of 2020. You can see the full report [here](Contour_Security_Audit_Dec2020.pdf).
-
-### Reporting security vulnerabilities
-
-If you've found a security related issue, a vulnerability, or a potential vulnerability in Contour please let the [Contour Security Team](mailto:cncf-contour-maintainers@lists.cncf.io) know with the details of the vulnerability. We'll send a confirmation email to acknowledge your report, and we'll send an additional email when we've identified the issue positively or negatively.
-
-For further details please see our [security policy](SECURITY.md).
-
-## Changelog
-
-See [the list of releases](https://github.com/projectcontour/contour/releases) to find out about feature changes.
+    (Should route to echoserver-3)

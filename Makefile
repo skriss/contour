@@ -1,5 +1,5 @@
 ORG = projectcontour
-PROJECT = contour
+PROJECT ?= contour
 MODULE = github.com/$(ORG)/$(PROJECT)
 REGISTRY ?= ghcr.io/projectcontour
 IMAGE := $(REGISTRY)/$(PROJECT)
