@@ -31,6 +31,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	gatewayapi_v1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 )
 
@@ -88,19 +89,21 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = AfterSuite(func() {
-	// Delete resources individually instead of deleting the entire contour
-	// namespace as a performance optimization, because deleting non-empty
-	// namespaces can take up to a couple minutes to complete.
-	require.NoError(f.T(), f.Provisioner.DeleteResourcesForInclusterProvisioner())
-
+	// Delete gateway classes first to ensure their finalizers have been
+	// removed.
 	for _, name := range []string{"contour", "contour-with-envoy-deployment"} {
 		gc := &gatewayapi_v1alpha2.GatewayClass{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
 			},
 		}
-		require.NoError(f.T(), f.DeleteGatewayClass(gc, false))
+		require.NoError(f.T(), f.DeleteGatewayClass(gc, true))
 	}
+
+	// Delete resources individually instead of deleting the entire contour
+	// namespace as a performance optimization, because deleting non-empty
+	// namespaces can take up to a couple minutes to complete.
+	require.NoError(f.T(), f.Provisioner.DeleteResourcesForInclusterProvisioner())
 
 	// No need to delete the ContourDeployment resource explicitly, it was
 	// in the projectcontour namespace which has already been deleted.
@@ -334,7 +337,7 @@ var _ = Describe("Gateway provisioner", func() {
 			// Now the GatewayClass should be accepted.
 			require.Eventually(f.T(), func() bool {
 				gc := &gatewayapi_v1alpha2.GatewayClass{}
-				if err := f.Client.Get(context.Background(), k8s.NamespacedNameOf(gatewayClass), gc); err != nil {
+				if err := f.Client.Get(context.Background(), types.NamespacedName{Name: gatewayClass.Name}, gc); err != nil {
 					return false
 				}
 
@@ -351,9 +354,116 @@ var _ = Describe("Gateway provisioner", func() {
 				return gatewayScheduled(gw)
 			}, time.Minute, time.Second)
 
+			require.NoError(f.T(), f.DeleteGateway(gateway, false))
 			require.NoError(f.T(), f.DeleteGatewayClass(gatewayClass, false))
 		})
 	})
+
+	f.NamespacedTest("provisioner-gatewayclass-finalizer", func(namespace string) {
+		Specify("GatewayClass finalizer is added and removed correctly", func() {
+			// Create GatewayClass.
+			gatewayClass := &gatewayapi_v1alpha2.GatewayClass{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "contour-finalizer",
+				},
+				Spec: gatewayapi_v1alpha2.GatewayClassSpec{
+					ControllerName: gatewayapi_v1alpha2.GatewayController("projectcontour.io/gateway-controller"),
+				},
+			}
+
+			// GatewayClass should be accepted, and not have any finalizers.
+			_, ok := f.CreateGatewayClassAndWaitFor(gatewayClass, func(gc *gatewayapi_v1alpha2.GatewayClass) bool {
+				return gatewayClassAccepted(gc) && len(gc.Finalizers) == 0
+			})
+			require.True(f.T(), ok)
+
+			// Create a Gateway using the GatewayClass.
+			gateway := &gatewayapi_v1alpha2.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "http",
+					Namespace: namespace,
+				},
+				Spec: gatewayapi_v1alpha2.GatewaySpec{
+					GatewayClassName: gatewayapi_v1alpha2.ObjectName("contour-finalizer"),
+					Listeners: []gatewayapi_v1alpha2.Listener{
+						{
+							Name:     "http",
+							Protocol: gatewayapi_v1alpha2.HTTPProtocolType,
+							Port:     gatewayapi_v1alpha2.PortNumber(80),
+							AllowedRoutes: &gatewayapi_v1alpha2.AllowedRoutes{
+								Namespaces: &gatewayapi_v1alpha2.RouteNamespaces{
+									From: gatewayapi.FromNamespacesPtr(gatewayapi_v1alpha2.NamespacesFromSame),
+								},
+							},
+						},
+					},
+				},
+			}
+			_, ok = f.CreateGatewayAndWaitFor(gateway, gatewayScheduled)
+			require.True(f.T(), ok)
+
+			// Verify the finalizer gets added to the GatewayClass.
+			require.Eventually(f.T(), func() bool {
+				gc := &gatewayapi_v1alpha2.GatewayClass{}
+				if err := f.Client.Get(context.Background(), types.NamespacedName{Name: gatewayClass.Name}, gc); err != nil {
+					return false
+				}
+
+				return len(gc.Finalizers) == 1 && gc.Finalizers[0] == gatewayapi_v1alpha2.GatewayClassFinalizerGatewaysExist
+			}, 10*time.Second, time.Second)
+
+			// Create another Gateway using the GatewayClass.
+			gateway2 := &gatewayapi_v1alpha2.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "http-2",
+					Namespace: namespace,
+				},
+				Spec: gatewayapi_v1alpha2.GatewaySpec{
+					GatewayClassName: gatewayapi_v1alpha2.ObjectName("contour-finalizer"),
+					Listeners: []gatewayapi_v1alpha2.Listener{
+						{
+							Name:     "http",
+							Protocol: gatewayapi_v1alpha2.HTTPProtocolType,
+							Port:     gatewayapi_v1alpha2.PortNumber(80),
+							AllowedRoutes: &gatewayapi_v1alpha2.AllowedRoutes{
+								Namespaces: &gatewayapi_v1alpha2.RouteNamespaces{
+									From: gatewayapi.FromNamespacesPtr(gatewayapi_v1alpha2.NamespacesFromSame),
+								},
+							},
+						},
+					},
+				},
+			}
+			_, ok = f.CreateGatewayAndWaitFor(gateway2, gatewayScheduled)
+			require.True(f.T(), ok)
+
+			// Delete the first Gateway, ensure there's still a finalizer on the GatewayClass.
+			require.NoError(f.T(), f.Client.Delete(context.Background(), gateway))
+			require.Never(f.T(), func() bool {
+				gc := &gatewayapi_v1alpha2.GatewayClass{}
+				if err := f.Client.Get(context.Background(), types.NamespacedName{Name: gatewayClass.Name}, gc); err != nil {
+					return false
+				}
+
+				return len(gc.Finalizers) == 0
+			}, 10*time.Second, time.Second)
+
+			// Delete the second Gateway, now the finalizer should be removed.
+			require.NoError(f.T(), f.Client.Delete(context.Background(), gateway2))
+			require.Eventually(f.T(), func() bool {
+				gc := &gatewayapi_v1alpha2.GatewayClass{}
+				if err := f.Client.Get(context.Background(), types.NamespacedName{Name: gatewayClass.Name}, gc); err != nil {
+					return false
+				}
+
+				return len(gc.Finalizers) == 0
+			}, 10*time.Second, time.Second)
+
+			// Deletion should now succeed.
+			require.NoError(f.T(), f.DeleteGatewayClass(gatewayClass, true))
+		})
+	})
+
 	f.NamespacedTest("gateway-with-envoy-deployment", func(namespace string) {
 		Specify("A gateway with Envoy as a deployment can be provisioned and routes traffic correctly", func() {
 			gateway := &gatewayapi_v1alpha2.Gateway{

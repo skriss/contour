@@ -8575,6 +8575,14 @@ rules:
   - gateway.networking.k8s.io
   resources:
   - gatewayclasses
+  - gatewayclasses/status
+  - gateways/status
+  verbs:
+  - update
+- apiGroups:
+  - gateway.networking.k8s.io
+  resources:
+  - gatewayclasses
   - gateways
   verbs:
   - get
@@ -8592,13 +8600,6 @@ rules:
   - get
   - list
   - watch
-- apiGroups:
-  - gateway.networking.k8s.io
-  resources:
-  - gatewayclasses/status
-  - gateways/status
-  verbs:
-  - update
 - apiGroups:
   - gateway.networking.k8s.io
   resources:

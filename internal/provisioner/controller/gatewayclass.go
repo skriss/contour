@@ -20,6 +20,7 @@ import (
 
 	"github.com/go-logr/logr"
 	contour_api_v1alpha1 "github.com/projectcontour/contour/apis/projectcontour/v1alpha1"
+	"github.com/projectcontour/contour/internal/provisioner/slice"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -61,6 +62,17 @@ func NewGatewayClassController(mgr manager.Manager, gatewayController string) (c
 		return nil, err
 	}
 
+	// Watch Gateways to trigger the GatewayClass finalizer add/remove logic.
+	// Because we don't have finalizers on Gateways, on delete events we won't
+	// be able to get the Gateway and see what class it was using. So, we enqueue
+	// all GatewayClasses we control every time there's any Gateway event.
+	if err := c.Watch(
+		&source.Kind{Type: &gatewayapi_v1alpha2.Gateway{}},
+		handler.EnqueueRequestsFromMapFunc(r.listControlledGatewayClasses),
+	); err != nil {
+		return nil, err
+	}
+
 	// Watch ContourDeployments since they can be used as parameters for
 	// GatewayClasses.
 	if err := c.Watch(
@@ -80,6 +92,25 @@ func (r *gatewayClassReconciler) hasMatchingController(obj client.Object) bool {
 	}
 
 	return gatewayClass.Spec.ControllerName == r.gatewayController
+}
+
+func (r *gatewayClassReconciler) listControlledGatewayClasses(client.Object) []reconcile.Request {
+	gatewayClasses := &gatewayapi_v1alpha2.GatewayClassList{}
+	if err := r.client.List(context.Background(), gatewayClasses); err != nil {
+		r.log.Error(err, "error listing gatewayclasses")
+		return nil
+	}
+
+	var reconciles []reconcile.Request
+	for _, gc := range gatewayClasses.Items {
+		if string(gc.Spec.ControllerName) == string(r.gatewayController) {
+			reconciles = append(reconciles, reconcile.Request{
+				NamespacedName: types.NamespacedName{Name: gc.Name},
+			})
+		}
+	}
+
+	return reconciles
 }
 
 // mapContourDeploymentToGatewayClasses returns a list of reconcile requests
@@ -136,6 +167,12 @@ func (r *gatewayClassReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	// provisioner controls.
 	if !r.hasMatchingController(gatewayClass) {
 		return ctrl.Result{}, nil
+	}
+
+	// Ensure the gateway class either does or does not have the "gateway exists"
+	// finalizer based on whether any gateways exist for the gateway class.
+	if err := r.reconcileFinalizer(gatewayClass); err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to reconcile finalizer for gatewayclass %s: %w", req, err)
 	}
 
 	ok, params, err := r.isValidParametersRef(ctx, gatewayClass.Spec.ParametersRef)
@@ -269,6 +306,54 @@ func (r *gatewayClassReconciler) isValidParametersRef(ctx context.Context, ref *
 	}
 
 	return true, params, nil
+}
+
+// reconcileFinalizer ensures that the finalizer "gateway-exists-finalizer.gateway.networking.k8s.io"
+// either does or doesn't exist on the GatewayClass, depending on whether any Gateways exist for the
+// GatewayClass.
+func (r *gatewayClassReconciler) reconcileFinalizer(gatewayClass *gatewayapi_v1alpha2.GatewayClass) error {
+	const finalizer = gatewayapi_v1alpha2.GatewayClassFinalizerGatewaysExist
+
+	gateways := &gatewayapi_v1alpha2.GatewayList{}
+	if err := r.client.List(context.Background(), gateways); err != nil {
+		return fmt.Errorf("error listing gateways: %w", err)
+	}
+
+	gatewaysExist := false
+	for _, gateway := range gateways.Items {
+		if string(gateway.Spec.GatewayClassName) == gatewayClass.Name {
+			gatewaysExist = true
+			break
+		}
+	}
+
+	if gatewaysExist {
+		r.log.WithValues("gatewayclass-name", gatewayClass.Name).Info(fmt.Sprintf("ensuring GatewayClass has finalizer %q", finalizer))
+
+		if slice.ContainsString(gatewayClass.Finalizers, finalizer) {
+			return nil
+		}
+
+		gatewayClass.Finalizers = append(gatewayClass.Finalizers, finalizer)
+
+		if err := r.client.Update(context.Background(), gatewayClass); err != nil {
+			return fmt.Errorf("failed to add finalizer to gatewayclass %s: %w", gatewayClass.Name, err)
+		}
+	} else {
+		r.log.WithValues("gatewayclass-name", gatewayClass.Name).Info(fmt.Sprintf("ensuring GatewayClass does not have finalizer %q", finalizer))
+
+		if !slice.ContainsString(gatewayClass.Finalizers, finalizer) {
+			return nil
+		}
+
+		gatewayClass.Finalizers = slice.RemoveString(gatewayClass.Finalizers, finalizer)
+
+		if err := r.client.Update(context.Background(), gatewayClass); err != nil {
+			return fmt.Errorf("failed to remove finalizer from gatewayclass %s: %w", gatewayClass.Name, err)
+		}
+	}
+
+	return nil
 }
 
 func isContourDeploymentRef(ref *gatewayapi_v1alpha2.ParametersReference) bool {

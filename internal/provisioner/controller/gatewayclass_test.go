@@ -33,11 +33,12 @@ import (
 
 func TestGatewayClassReconcile(t *testing.T) {
 	tests := map[string]struct {
-		gatewayClass  *gatewayv1alpha2.GatewayClass
-		params        *contourv1alpha1.ContourDeployment
-		req           *reconcile.Request
-		wantCondition *metav1.Condition
-		assertions    func(t *testing.T, r *gatewayClassReconciler, gc *gatewayv1alpha2.GatewayClass, reconcileErr error)
+		gatewayClass   *gatewayv1alpha2.GatewayClass
+		params         *contourv1alpha1.ContourDeployment
+		otherResources []client.Object
+		req            *reconcile.Request
+		wantCondition  *metav1.Condition
+		assertions     func(t *testing.T, r *gatewayClassReconciler, gc *gatewayv1alpha2.GatewayClass, reconcileErr error)
 	}{
 		"reconcile request for non-existent gatewayclass results in no error": {
 			req: &reconcile.Request{
@@ -69,7 +70,7 @@ func TestGatewayClassReconcile(t *testing.T) {
 				assert.Empty(t, res.Status.Conditions)
 			},
 		},
-		"gatewayclass controlled by us with no parameters gets Accepted: true condition": {
+		"gatewayclass controlled by us with no parameters gets Accepted: true condition and no finalizer": {
 			gatewayClass: &gatewayv1alpha2.GatewayClass{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "gatewayclass-1",
@@ -82,6 +83,46 @@ func TestGatewayClassReconcile(t *testing.T) {
 				Type:   string(gatewayv1alpha2.GatewayClassConditionStatusAccepted),
 				Status: metav1.ConditionTrue,
 				Reason: string(gatewayv1alpha2.GatewayClassReasonAccepted),
+			},
+			assertions: func(t *testing.T, r *gatewayClassReconciler, gc *gatewayv1alpha2.GatewayClass, reconcileErr error) {
+				// Since there is no Gateway for the GatewayClass, it should not have a finalizer.
+				res := &gatewayv1alpha2.GatewayClass{}
+				require.NoError(t, r.client.Get(context.Background(), keyFor(gc), res))
+
+				assert.Len(t, res.Finalizers, 0)
+			},
+		},
+		"gatewayclass controlled by us with a Gateway using it gets Accepted: true condition and a finalizer": {
+			gatewayClass: &gatewayv1alpha2.GatewayClass{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "gatewayclass-1",
+				},
+				Spec: gatewayv1alpha2.GatewayClassSpec{
+					ControllerName: "projectcontour.io/gateway-controller",
+				},
+			},
+			otherResources: []client.Object{
+				&gatewayv1alpha2.Gateway{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "default",
+						Name:      "gateway-1",
+					},
+					Spec: gatewayv1alpha2.GatewaySpec{
+						GatewayClassName: "gatewayclass-1",
+					},
+				},
+			},
+			wantCondition: &metav1.Condition{
+				Type:   string(gatewayv1alpha2.GatewayClassConditionStatusAccepted),
+				Status: metav1.ConditionTrue,
+				Reason: string(gatewayv1alpha2.GatewayClassReasonAccepted),
+			},
+			assertions: func(t *testing.T, r *gatewayClassReconciler, gc *gatewayv1alpha2.GatewayClass, reconcileErr error) {
+				res := &gatewayv1alpha2.GatewayClass{}
+				require.NoError(t, r.client.Get(context.Background(), keyFor(gc), res))
+
+				require.Len(t, res.Finalizers, 1)
+				assert.Equal(t, gatewayv1alpha2.GatewayClassFinalizerGatewaysExist, res.Finalizers[0])
 			},
 		},
 		"gatewayclass controlled by us with an invalid parametersRef (target does not exist) gets Accepted: false condition": {
@@ -288,6 +329,9 @@ func TestGatewayClassReconcile(t *testing.T) {
 			}
 			if tc.params != nil {
 				client.WithObjects(tc.params)
+			}
+			if len(tc.otherResources) > 0 {
+				client.WithObjects(tc.otherResources...)
 			}
 
 			r := &gatewayClassReconciler{
