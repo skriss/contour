@@ -3,8 +3,10 @@ name: Build and Test Pull Request
 # Trigger the workflow on push or pull request
 on: 
   push:
+    paths-ignore: [changelogs/**]
   pull_request:
     types: [opened, synchronize]
+    paths-ignore: [changelogs/**]
 
 env:
   GOPROXY: https://proxy.golang.org/
