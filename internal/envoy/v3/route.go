@@ -38,7 +38,7 @@ import (
 func VirtualHostAndRoutes(vh *dag.VirtualHost, dagRoutes []*dag.Route, secure bool, authService *dag.ExtensionCluster) *envoy_route_v3.VirtualHost {
 	var envoyRoutes []*envoy_route_v3.Route
 	for _, route := range dagRoutes {
-		envoyRoutes = append(envoyRoutes, buildRoute(route, vh.Name, secure, authService))
+		envoyRoutes = append(envoyRoutes, buildRoute(route, secure, authService))
 	}
 
 	evh := VirtualHost(vh.Name, envoyRoutes...)
@@ -51,7 +51,7 @@ func VirtualHostAndRoutes(vh *dag.VirtualHost, dagRoutes []*dag.Route, secure bo
 }
 
 // buildRoute converts a DAG route to an Envoy route.
-func buildRoute(dagRoute *dag.Route, vhostName string, secure bool, authService *dag.ExtensionCluster) *envoy_route_v3.Route {
+func buildRoute(dagRoute *dag.Route, secure bool, authService *dag.ExtensionCluster) *envoy_route_v3.Route {
 	switch {
 	case dagRoute.HTTPSUpgrade && !secure:
 		// TODO(dfc) if we ensure the builder never returns a dag.Route connected

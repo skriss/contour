@@ -21,8 +21,6 @@ import (
 	"github.com/golang/protobuf/proto"
 	envoy_v3 "github.com/projectcontour/contour/internal/envoy/v3"
 	"github.com/projectcontour/contour/internal/protobuf"
-	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestClusterCacheContents(t *testing.T) {
@@ -146,23 +144,6 @@ func TestClusterCacheQuery(t *testing.T) {
 			got := cc.Query(tc.query)
 			protobuf.ExpectEqual(t, tc.want, got)
 		})
-	}
-}
-
-func service(ns, name string, ports ...v1.ServicePort) *v1.Service {
-	return serviceWithAnnotations(ns, name, nil, ports...)
-}
-
-func serviceWithAnnotations(ns, name string, annotations map[string]string, ports ...v1.ServicePort) *v1.Service {
-	return &v1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        name,
-			Namespace:   ns,
-			Annotations: annotations,
-		},
-		Spec: v1.ServiceSpec{
-			Ports: ports,
-		},
 	}
 }
 

@@ -16,16 +16,11 @@ package v3
 import (
 	"testing"
 
-	envoy_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-	envoy_tls_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/golang/protobuf/proto"
 	"github.com/projectcontour/contour/apis/projectcontour/v1alpha1"
-	"github.com/projectcontour/contour/internal/dag"
 	envoy_v3 "github.com/projectcontour/contour/internal/envoy/v3"
 	"github.com/projectcontour/contour/internal/protobuf"
-	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestListenerCacheContents(t *testing.T) {
@@ -125,22 +120,6 @@ func TestListenerCacheQuery(t *testing.T) {
 			protobuf.ExpectEqual(t, tc.want, got)
 		})
 	}
-}
-
-func transportSocket(secretname string, tlsMinProtoVersion envoy_tls_v3.TlsParameters_TlsProtocol, cipherSuites []string, alpnprotos ...string) *envoy_core_v3.TransportSocket {
-	secret := &dag.Secret{
-		Object: &v1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      secretname,
-				Namespace: "default",
-			},
-			Type: v1.SecretTypeTLS,
-			Data: secretdata(CERTIFICATE, RSA_PRIVATE_KEY),
-		},
-	}
-	return envoy_v3.DownstreamTLSTransportSocket(
-		envoy_v3.DownstreamTLSContext(secret, tlsMinProtoVersion, cipherSuites, nil, alpnprotos...),
-	)
 }
 
 func listenermap(listeners ...*envoy_listener_v3.Listener) map[string]*envoy_listener_v3.Listener {

@@ -104,9 +104,10 @@ var _ = Describe("Incluster", func() {
 
 	f.NamespacedTest("leader-election", testLeaderElection)
 
-	f.NamespacedTest("projectcontour-resource-rbac", testProjectcontourResourcesRBAC)
+	// TODO: replace with a Gateway API-based RBAC test
+	// f.NamespacedTest("projectcontour-resource-rbac", testProjectcontourResourcesRBAC)
 
-	f.NamespacedTest("ingress-resource-rbac", testIngressResourceRBAC)
+	// f.NamespacedTest("ingress-resource-rbac", testIngressResourceRBAC)
 
 	Context("ipv4 cluster ipv6 listen compatibility", func() {
 		BeforeEach(func() {
@@ -122,6 +123,6 @@ var _ = Describe("Incluster", func() {
 			contourConfig.Spec.Envoy.Metrics.Address = "::"
 		})
 
-		f.NamespacedTest("ipv4-ipv6-compat-smoke-test", testSimpleSmoke)
+		// f.NamespacedTest("ipv4-ipv6-compat-smoke-test", testSimpleSmoke)
 	})
 })

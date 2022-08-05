@@ -103,11 +103,6 @@ type Deployment struct {
 	// Optional volumes that will be attached to Envoy daemonset.
 	EnvoyExtraVolumes      []v1.Volume
 	EnvoyExtraVolumeMounts []v1.VolumeMount
-
-	// Ratelimit deployment.
-	RateLimitDeployment       *apps_v1.Deployment
-	RateLimitService          *v1.Service
-	RateLimitExtensionService *contour_api_v1alpha1.ExtensionService
 }
 
 // UnmarshalResources unmarshals resources from rendered Contour manifest in
@@ -197,34 +192,7 @@ func (d *Deployment) UnmarshalResources() error {
 		}
 	}
 
-	rateLimitExamplePath := filepath.Join(filepath.Dir(thisFile), "..", "..", "examples", "ratelimit")
-	rateLimitDeploymentFile := filepath.Join(rateLimitExamplePath, "02-ratelimit.yaml")
-	rateLimitExtSvcFile := filepath.Join(rateLimitExamplePath, "03-ratelimit-extsvc.yaml")
-
-	rLDFile, err := os.Open(rateLimitDeploymentFile)
-	if err != nil {
-		return err
-	}
-	defer rLDFile.Close()
-	decoder = apimachinery_util_yaml.NewYAMLToJSONDecoder(rLDFile)
-	d.RateLimitDeployment = new(apps_v1.Deployment)
-	if err := decoder.Decode(d.RateLimitDeployment); err != nil {
-		return err
-	}
-	d.RateLimitService = new(v1.Service)
-	if err := decoder.Decode(d.RateLimitService); err != nil {
-		return err
-	}
-
-	rLESFile, err := os.Open(rateLimitExtSvcFile)
-	if err != nil {
-		return err
-	}
-	defer rLESFile.Close()
-	decoder = apimachinery_util_yaml.NewYAMLToJSONDecoder(rLESFile)
-	d.RateLimitExtensionService = new(contour_api_v1alpha1.ExtensionService)
-
-	return decoder.Decode(d.RateLimitExtensionService)
+	return nil
 }
 
 // Common case of updating object if exists, create otherwise.
@@ -397,55 +365,6 @@ func (d *Deployment) waitForEnvoyDeploymentUpdated() error {
 		return tempDeploy.Status.UnavailableReplicas == 0, nil
 	}
 	return wait.PollImmediate(time.Millisecond*50, time.Minute*3, deploymentUpdated)
-}
-
-func (d *Deployment) EnsureRateLimitResources(namespace string, configContents string) error {
-	setNamespace := d.Namespace.Name
-	if len(namespace) > 0 {
-		setNamespace = namespace
-	}
-
-	configMap := &v1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "ratelimit-config",
-			Namespace: setNamespace,
-		},
-		Data: map[string]string{
-			"ratelimit-config.yaml": configContents,
-		},
-	}
-	if err := d.ensureResource(configMap, new(v1.ConfigMap)); err != nil {
-		return err
-	}
-
-	deployment := d.RateLimitDeployment.DeepCopy()
-	deployment.Namespace = setNamespace
-	if os.Getenv("IPV6_CLUSTER") == "true" {
-		for i, c := range deployment.Spec.Template.Spec.Containers {
-			if c.Name != "ratelimit" {
-				continue
-			}
-			deployment.Spec.Template.Spec.Containers[i].Env = append(
-				deployment.Spec.Template.Spec.Containers[i].Env,
-				v1.EnvVar{Name: "HOST", Value: "::"},
-				v1.EnvVar{Name: "GRPC_HOST", Value: "::"},
-				v1.EnvVar{Name: "DEBUG_HOST", Value: "::"},
-			)
-		}
-	}
-	if err := d.ensureResource(deployment, new(apps_v1.Deployment)); err != nil {
-		return err
-	}
-
-	service := d.RateLimitService.DeepCopy()
-	service.Namespace = setNamespace
-	if err := d.ensureResource(service, new(v1.Service)); err != nil {
-		return err
-	}
-
-	extSvc := d.RateLimitExtensionService.DeepCopy()
-	extSvc.Namespace = setNamespace
-	return d.ensureResource(extSvc, new(contour_api_v1alpha1.ExtensionService))
 }
 
 // Convenience method for deploying the pieces of the deployment needed for

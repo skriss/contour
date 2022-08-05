@@ -4322,14 +4322,6 @@ func directResponseRouteService(prefix string, statusCode uint32, first *Service
 	}
 }
 
-func prefixroute(prefix string, first *Service, rest ...*Service) *Route {
-	services := append([]*Service{first}, rest...)
-	return &Route{
-		PathMatchCondition: prefixString(prefix),
-		Clusters:           clusters(services...),
-	}
-}
-
 func prefixrouteHTTPRoute(prefix string, first *Service, rest ...*Service) *Route {
 	services := append([]*Service{first}, rest...)
 	return &Route{
@@ -4354,51 +4346,6 @@ func exactrouteHTTPRoute(path string, first *Service, rest ...*Service) *Route {
 	}
 }
 
-func routeProtocol(prefix string, protocol string, first *Service, rest ...*Service) *Route {
-	services := append([]*Service{first}, rest...)
-
-	cs := clusters(services...)
-	for _, c := range cs {
-		c.Protocol = protocol
-	}
-	return &Route{
-		PathMatchCondition: prefixString(prefix),
-		Clusters:           cs,
-	}
-}
-
-func routeCluster(prefix string, first *Cluster, rest ...*Cluster) *Route {
-	return &Route{
-		PathMatchCondition: prefixString(prefix),
-		Clusters:           append([]*Cluster{first}, rest...),
-	}
-}
-
-func routeUpgrade(prefix string, first *Service, rest ...*Service) *Route {
-	r := prefixroute(prefix, first, rest...)
-	r.HTTPSUpgrade = true
-	return r
-}
-
-func routeWebsocket(prefix string, first *Service, rest ...*Service) *Route {
-	r := prefixroute(prefix, first, rest...)
-	r.Websocket = true
-	return r
-}
-
-func routeHeaders(prefix string, requestSet map[string]string, requestRemove []string, responseSet map[string]string, responseRemove []string, first *Service, rest ...*Service) *Route {
-	r := prefixroute(prefix, first, rest...)
-	r.RequestHeadersPolicy = &HeadersPolicy{
-		Set:    requestSet,
-		Remove: requestRemove,
-	}
-	r.ResponseHeadersPolicy = &HeadersPolicy{
-		Set:    responseSet,
-		Remove: responseRemove,
-	}
-	return r
-}
-
 func clusterHeaders(requestSet map[string]string, requestAdd map[string]string, requestRemove []string, hostRewrite string, services ...*Service) (c []*Cluster) {
 	for _, s := range services {
 		c = append(c, &Cluster{
@@ -4411,38 +4358,6 @@ func clusterHeaders(requestSet map[string]string, requestAdd map[string]string, 
 				HostRewrite: hostRewrite,
 			},
 			Weight: s.Weighted.Weight,
-		})
-	}
-	return c
-}
-
-func clusterHeadersUnweighted(headersSet map[string]string, headersAdd map[string]string, headersRemove []string, hostRewrite string, services ...*Service) (c []*Cluster) {
-	for _, s := range services {
-		c = append(c, &Cluster{
-			Upstream: s,
-			Protocol: s.Protocol,
-			RequestHeadersPolicy: &HeadersPolicy{
-				Set:         headersSet,
-				Add:         headersAdd,
-				Remove:      headersRemove,
-				HostRewrite: hostRewrite,
-			},
-			ResponseHeadersPolicy: &HeadersPolicy{
-				Set:         headersSet,
-				Add:         headersAdd,
-				Remove:      headersRemove,
-				HostRewrite: hostRewrite,
-			},
-		})
-	}
-	return c
-}
-
-func clusters(services ...*Service) (c []*Cluster) {
-	for _, s := range services {
-		c = append(c, &Cluster{
-			Upstream: s,
-			Protocol: s.Protocol,
 		})
 	}
 	return c
@@ -4474,16 +4389,6 @@ func weightedService(s *v1.Service, weight uint32) *Service {
 	}
 }
 
-func clustermap(services ...*v1.Service) []*Cluster {
-	var c []*Cluster
-	for _, s := range services {
-		c = append(c, &Cluster{
-			Upstream: service(s),
-		})
-	}
-	return c
-}
-
 func secret(s *v1.Secret) *Secret {
 	return &Secret{
 		Object: s,
@@ -4505,17 +4410,6 @@ func virtualhost(name string, first *Route, rest ...*Route) *VirtualHost {
 	}
 }
 
-func securevirtualhost(name string, sec *v1.Secret, first *Route, rest ...*Route) *SecureVirtualHost {
-	return &SecureVirtualHost{
-		VirtualHost: VirtualHost{
-			Name:   name,
-			Routes: routes(append([]*Route{first}, rest...)...),
-		},
-		MinTLSVersion: "1.2",
-		Secret:        secret(sec),
-	}
-}
-
 func listeners(ls ...*Listener) []*Listener {
 	var v []*Listener
 	v = append(v, ls...)
@@ -4528,8 +4422,6 @@ func prefixString(prefix string) MatchCondition {
 func prefixSegment(prefix string) MatchCondition {
 	return &PrefixMatchCondition{Prefix: prefix, PrefixMatchType: PrefixMatchSegment}
 }
-func exact(path string) MatchCondition  { return &ExactMatchCondition{Path: path} }
-func regex(regex string) MatchCondition { return &RegexMatchCondition{Regex: regex} }
 
 func withMirror(r *Route, mirror *Service) *Route {
 	r.MirrorPolicy = &MirrorPolicy{

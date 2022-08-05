@@ -27,11 +27,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	certmanagerv1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega/gexec"
-	contourv1 "github.com/projectcontour/contour/apis/projectcontour/v1"
 	contourv1alpha1 "github.com/projectcontour/contour/apis/projectcontour/v1alpha1"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
@@ -97,7 +95,6 @@ func NewFramework(inClusterTestSuite bool) *Framework {
 
 	scheme := runtime.NewScheme()
 	require.NoError(t, kubescheme.AddToScheme(scheme))
-	require.NoError(t, contourv1.AddToScheme(scheme))
 	require.NoError(t, contourv1alpha1.AddToScheme(scheme))
 	require.NoError(t, gatewayapi_v1alpha2.AddToScheme(scheme))
 	require.NoError(t, gatewayapi_v1beta1.AddToScheme(scheme))
@@ -294,35 +291,6 @@ func (f *Framework) Test(body TestBody) {
 	body()
 }
 
-// CreateHTTPProxy creates the provided HTTPProxy and returns any relevant error.
-func (f *Framework) CreateHTTPProxy(proxy *contourv1.HTTPProxy) error {
-	return f.Client.Create(context.TODO(), proxy)
-}
-
-// CreateHTTPProxyAndWaitFor creates the provided HTTPProxy in the Kubernetes API
-// and then waits for the specified condition to be true.
-func (f *Framework) CreateHTTPProxyAndWaitFor(proxy *contourv1.HTTPProxy, condition func(*contourv1.HTTPProxy) bool) (*contourv1.HTTPProxy, bool) {
-	require.NoError(f.t, f.Client.Create(context.TODO(), proxy))
-
-	res := &contourv1.HTTPProxy{}
-
-	if err := wait.PollImmediate(f.RetryInterval, f.RetryTimeout, func() (bool, error) {
-		if err := f.Client.Get(context.TODO(), client.ObjectKeyFromObject(proxy), res); err != nil {
-			// if there was an error, we want to keep
-			// retrying, so just return false, not an
-			// error.
-			return false, nil
-		}
-
-		return condition(res), nil
-	}); err != nil {
-		// return the last response for logging/debugging purposes
-		return res, false
-	}
-
-	return res, true
-}
-
 // CreateHTTPRouteAndWaitFor creates the provided HTTPRoute in the Kubernetes API
 // and then waits for the specified condition to be true.
 func (f *Framework) CreateHTTPRouteAndWaitFor(route *gatewayapi_v1beta1.HTTPRoute, condition func(*gatewayapi_v1beta1.HTTPRoute) bool) (*gatewayapi_v1beta1.HTTPRoute, bool) {
@@ -514,52 +482,6 @@ type EchoResponseBody struct {
 func UsingContourConfigCRD() bool {
 	useContourConfiguration, found := os.LookupEnv("USE_CONTOUR_CONFIGURATION_CRD")
 	return found && useContourConfiguration == "true"
-}
-
-// HTTPProxyValid returns true if the proxy has a .status.currentStatus
-// of "valid".
-func HTTPProxyValid(proxy *contourv1.HTTPProxy) bool {
-
-	if proxy == nil {
-		return false
-	}
-
-	if len(proxy.Status.Conditions) == 0 {
-		return false
-	}
-
-	cond := proxy.Status.GetConditionFor("Valid")
-	return cond.Status == "True"
-
-}
-
-// HTTPProxyInvalid returns true if the proxy has a .status.currentStatus
-// of "valid".
-func HTTPProxyInvalid(proxy *contourv1.HTTPProxy) bool {
-	return proxy != nil && proxy.Status.CurrentStatus == "invalid"
-}
-
-// HTTPProxyErrors provides a pretty summary of any Errors on the HTTPProxy Valid condition.
-// If there are no errors, the return value will be empty.
-func HTTPProxyErrors(proxy *contourv1.HTTPProxy) string {
-	cond := proxy.Status.GetConditionFor("Valid")
-	errors := cond.Errors
-	if len(errors) > 0 {
-		return spew.Sdump(errors)
-	}
-
-	return ""
-}
-
-// DetailedConditionInvalid returns true if the provided detailed condition
-// list contains a condition of type "Valid" and status "False".
-func DetailedConditionInvalid(conditions []contourv1.DetailedCondition) bool {
-	for _, c := range conditions {
-		if c.Condition.Type == "Valid" {
-			return c.Condition.Status == "False"
-		}
-	}
-	return false
 }
 
 // VerifyTLSServerCert returns a TLS config functional

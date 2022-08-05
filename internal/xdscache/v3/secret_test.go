@@ -21,7 +21,6 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/projectcontour/contour/internal/protobuf"
 	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestSecretCacheContents(t *testing.T) {
@@ -122,18 +121,6 @@ func secret(name string, data map[string][]byte) *envoy_tls_v3.Secret {
 				},
 			},
 		},
-	}
-}
-
-// tlssecert creates a new v1.Secret object of type kubernetes.io/tls.
-func tlssecret(namespace, name string, data map[string][]byte) *v1.Secret {
-	return &v1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
-		Type: v1.SecretTypeTLS,
-		Data: data,
 	}
 }
 

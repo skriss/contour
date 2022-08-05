@@ -376,22 +376,6 @@ func (kc *KubernetesCache) DelegationPermitted(secret types.NamespacedName, targ
 	return secret.Namespace == targetNamespace
 }
 
-func validCA(s *v1.Secret) error {
-	if len(s.Data[CACertificateKey]) == 0 {
-		return fmt.Errorf("empty %q key", CACertificateKey)
-	}
-
-	return nil
-}
-
-func validCRL(s *v1.Secret) error {
-	if len(s.Data[CRLKey]) == 0 {
-		return fmt.Errorf("empty %q key", CRLKey)
-	}
-
-	return nil
-}
-
 // LookupService returns the Kubernetes service and port matching the provided parameters,
 // or an error if a match can't be found.
 func (kc *KubernetesCache) LookupService(meta types.NamespacedName, port intstr.IntOrString) (*v1.Service, v1.ServicePort, error) {

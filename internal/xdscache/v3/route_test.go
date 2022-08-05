@@ -15,12 +15,10 @@ package v3
 
 import (
 	"testing"
-	"time"
 
 	envoy_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/golang/protobuf/proto"
 	"github.com/projectcontour/contour/internal/dag"
-	envoy_v3 "github.com/projectcontour/contour/internal/envoy/v3"
 	"github.com/projectcontour/contour/internal/protobuf"
 	"github.com/stretchr/testify/assert"
 )
@@ -316,108 +314,4 @@ func TestSortLongestRouteFirst(t *testing.T) {
 			assert.Equal(t, tc.want, got)
 		})
 	}
-}
-
-func routecluster(cluster string) *envoy_route_v3.Route_Route {
-	return &envoy_route_v3.Route_Route{
-		Route: &envoy_route_v3.RouteAction{
-			ClusterSpecifier: &envoy_route_v3.RouteAction_Cluster{
-				Cluster: cluster,
-			},
-		},
-	}
-
-}
-
-func websocketroute(c string) *envoy_route_v3.Route_Route {
-	r := routecluster(c)
-	r.Route.UpgradeConfigs = append(r.Route.UpgradeConfigs,
-		&envoy_route_v3.RouteAction_UpgradeConfig{
-			UpgradeType: "websocket",
-		},
-	)
-	return r
-}
-
-func routetimeout(cluster string, timeout time.Duration) *envoy_route_v3.Route_Route {
-	r := routecluster(cluster)
-	r.Route.Timeout = protobuf.Duration(timeout)
-	return r
-}
-
-func routeretry(cluster string, retryOn string, numRetries uint32, perTryTimeout time.Duration) *envoy_route_v3.Route_Route {
-	r := routecluster(cluster)
-	r.Route.RetryPolicy = &envoy_route_v3.RetryPolicy{
-		RetryOn: retryOn,
-	}
-	if numRetries > 0 {
-		r.Route.RetryPolicy.NumRetries = protobuf.UInt32(numRetries)
-	}
-	if perTryTimeout > 0 {
-		r.Route.RetryPolicy.PerTryTimeout = protobuf.Duration(perTryTimeout)
-	}
-	return r
-}
-
-func routeRegex(regex string, headers ...dag.HeaderMatchCondition) *envoy_route_v3.RouteMatch {
-	return envoy_v3.RouteMatch(&dag.Route{
-		PathMatchCondition: &dag.RegexMatchCondition{
-			Regex: regex,
-		},
-		HeaderMatchConditions: headers,
-	})
-}
-
-func routePrefixIngress(prefix string, headers ...dag.HeaderMatchCondition) *envoy_route_v3.RouteMatch {
-	return envoy_v3.RouteMatch(&dag.Route{
-		PathMatchCondition: &dag.PrefixMatchCondition{
-			Prefix:          prefix,
-			PrefixMatchType: dag.PrefixMatchSegment,
-		},
-		HeaderMatchConditions: headers,
-	})
-}
-
-func routePrefix(prefix string, headers ...dag.HeaderMatchCondition) *envoy_route_v3.RouteMatch {
-	return envoy_v3.RouteMatch(&dag.Route{
-		PathMatchCondition: &dag.PrefixMatchCondition{
-			Prefix: prefix,
-		},
-		HeaderMatchConditions: headers,
-	})
-}
-
-func routeExact(path string, headers ...dag.HeaderMatchCondition) *envoy_route_v3.RouteMatch {
-	return envoy_v3.RouteMatch(&dag.Route{
-		PathMatchCondition: &dag.ExactMatchCondition{
-			Path: path,
-		},
-		HeaderMatchConditions: headers,
-	})
-}
-
-func weightedClusters(first, second *envoy_route_v3.WeightedCluster_ClusterWeight, rest ...*envoy_route_v3.WeightedCluster_ClusterWeight) []*envoy_route_v3.WeightedCluster_ClusterWeight {
-	return append([]*envoy_route_v3.WeightedCluster_ClusterWeight{first, second}, rest...)
-}
-
-func weightedCluster(name string, weight uint32) *envoy_route_v3.WeightedCluster_ClusterWeight {
-	return &envoy_route_v3.WeightedCluster_ClusterWeight{
-		Name:   name,
-		Weight: protobuf.UInt32(weight),
-	}
-}
-
-func routeConfigurations(rcs ...*envoy_route_v3.RouteConfiguration) map[string]*envoy_route_v3.RouteConfiguration {
-	m := make(map[string]*envoy_route_v3.RouteConfiguration)
-	for _, rc := range rcs {
-		m[rc.Name] = rc
-	}
-	return m
-}
-
-func withMirrorPolicy(route *envoy_route_v3.Route_Route, mirror string) *envoy_route_v3.Route_Route {
-	route.Route.RequestMirrorPolicies = []*envoy_route_v3.RouteAction_RequestMirrorPolicy{{
-		Cluster: mirror,
-	}}
-	return route
 }

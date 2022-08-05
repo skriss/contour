@@ -18,7 +18,6 @@ package dag
 import (
 	"errors"
 	"fmt"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -929,18 +928,3 @@ type ExtensionCluster struct {
 	// private key to be used when establishing TLS connection to upstream cluster.
 	ClientCertificate *Secret
 }
-
-func wildcardDomainHeaderMatch(fqdn string) HeaderMatchCondition {
-	return HeaderMatchCondition{
-		// Internally Envoy uses the HTTP/2 ":authority" header in
-		// place of the HTTP/1 "host" header.
-		// See: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#config-route-v3-headermatcher
-		Name:      ":authority",
-		MatchType: HeaderMatchTypeRegex,
-		Value:     singleDNSLabelWildcardRegex + regexp.QuoteMeta(fqdn[1:]),
-	}
-}
-
-const singleDNSLabelWildcardRegex = "^[a-z0-9]([-a-z0-9]*[a-z0-9])?"
-
-var _ = regexp.MustCompile(singleDNSLabelWildcardRegex)
