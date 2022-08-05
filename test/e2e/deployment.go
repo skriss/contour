@@ -160,9 +160,6 @@ func (d *Deployment) UnmarshalResources() error {
 		// CRDs are installed at cluster setup time so we can ignore them.
 		&apiextensions_v1.CustomResourceDefinition{},
 		&apiextensions_v1.CustomResourceDefinition{},
-		&apiextensions_v1.CustomResourceDefinition{},
-		&apiextensions_v1.CustomResourceDefinition{},
-		&apiextensions_v1.CustomResourceDefinition{},
 		d.CertgenServiceAccount,
 		d.CertgenRoleBinding,
 		d.CertgenRole,

@@ -21,7 +21,6 @@ import (
 	"github.com/projectcontour/contour/internal/provisioner/labels"
 	"github.com/projectcontour/contour/internal/provisioner/model"
 	corev1 "k8s.io/api/core/v1"
-	networkingv1 "k8s.io/api/networking/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -90,13 +89,9 @@ func desiredClusterRole(name string, contour *model.Contour) *rbacv1.ClusterRole
 			policyRuleFor(gatewayv1alpha2.GroupName, getListWatch, "gatewayclasses", "gateways", "httproutes", "tlsroutes", "referencepolicies", "referencegrants"),
 			policyRuleFor(gatewayv1alpha2.GroupName, update, "gatewayclasses/status", "gateways/status", "httproutes/status", "tlsroutes/status"),
 
-			// Ingress resources.
-			policyRuleFor(networkingv1.GroupName, getListWatch, "ingresses"),
-			policyRuleFor(networkingv1.GroupName, createGetUpdate, "ingresses/status"),
-
 			// Contour CRDs.
-			policyRuleFor(contourV1GroupName, getListWatch, "httpproxies", "tlscertificatedelegations", "extensionservices", "contourconfigurations"),
-			policyRuleFor(contourV1GroupName, createGetUpdate, "httpproxies/status", "extensionservices/status", "contourconfigurations/status"),
+			policyRuleFor(contourV1GroupName, getListWatch, "contourconfigurations"),
+			policyRuleFor(contourV1GroupName, createGetUpdate, "contourconfigurations/status"),
 		},
 	}
 }
