@@ -18,11 +18,9 @@ import (
 	"net"
 	"strings"
 
-	contour_api_v1 "github.com/projectcontour/contour/apis/projectcontour/v1"
 	"github.com/projectcontour/contour/internal/k8s"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
-	networking_v1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -35,18 +33,18 @@ import (
 //
 // The theory of operation of the loadBalancerStatusWriter is as follows:
 //
-// 1. On startup the loadBalancerStatusWriter waits to be elected leader.
-// 2. Once elected leader, the loadBalancerStatusWriter waits to receive a
-//    v1.LoadBalancerStatus value.
-// 3. Once a v1.LoadBalancerStatus value has been received, the
-//    cached address is updated so that it will be applied to objects
-//    received in any subsequent informer events.
-// 4. All Ingress, HTTPProxy and Gateway objects are listed from the informer
-//    cache and an attempt is made to update their status with the new
-//    address. This update may end up being a no-op in which case it
-//    doesn't make an API server call.
-// 5. If the worker is stopped, the informer continues but no further
-//    status updates are made.
+//  1. On startup the loadBalancerStatusWriter waits to be elected leader.
+//  2. Once elected leader, the loadBalancerStatusWriter waits to receive a
+//     v1.LoadBalancerStatus value.
+//  3. Once a v1.LoadBalancerStatus value has been received, the
+//     cached address is updated so that it will be applied to objects
+//     received in any subsequent informer events.
+//  4. All Ingress, HTTPProxy and Gateway objects are listed from the informer
+//     cache and an attempt is made to update their status with the new
+//     address. This update may end up being a no-op in which case it
+//     doesn't make an API server call.
+//  5. If the worker is stopped, the informer continues but no further
+//     status updates are made.
 type loadBalancerStatusWriter struct {
 	log                   logrus.FieldLogger
 	cache                 cache.Cache
@@ -73,7 +71,6 @@ func (isw *loadBalancerStatusWriter) Start(ctx context.Context) error {
 			return log
 		}(),
 		Cache:                 isw.cache,
-		IngressClassNames:     isw.ingressClassNames,
 		GatewayControllerName: isw.gatewayControllerName,
 		GatewayRef:            isw.gatewayRef,
 		StatusUpdater:         isw.statusUpdater,
@@ -82,10 +79,7 @@ func (isw *loadBalancerStatusWriter) Start(ctx context.Context) error {
 	// Create informers for the types that need load balancer
 	// address status. The cache should have already started
 	// informers, so new informers will auto-start.
-	resources := []client.Object{
-		&contour_api_v1.HTTPProxy{},
-		&networking_v1.Ingress{},
-	}
+	var resources []client.Object
 
 	// Only create Gateway informer if a controller or specific gateway was provided,
 	// otherwise the API may not exist in the cluster.
@@ -116,24 +110,6 @@ func (isw *loadBalancerStatusWriter) Start(ctx context.Context) error {
 				Info("received a new address for status.loadBalancer")
 
 			u.Set(lbs)
-
-			var ingressList networking_v1.IngressList
-			if err := isw.cache.List(context.Background(), &ingressList); err != nil {
-				isw.log.WithError(err).WithField("kind", "Ingress").Error("failed to list objects")
-			} else {
-				for i := range ingressList.Items {
-					u.OnAdd(&ingressList.Items[i])
-				}
-			}
-
-			var proxyList contour_api_v1.HTTPProxyList
-			if err := isw.cache.List(context.Background(), &proxyList); err != nil {
-				isw.log.WithError(err).WithField("kind", "HTTPProxy").Error("failed to list objects")
-			} else {
-				for i := range proxyList.Items {
-					u.OnAdd(&proxyList.Items[i])
-				}
-			}
 
 			// Only list Gateways if a controller or specific gateway was configured,
 			// otherwise the API may not exist in the cluster.

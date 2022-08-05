@@ -389,7 +389,6 @@ func (c *ListenerCache) OnChange(root *dag.DAG) {
 					AllowChunkedLength(cfg.AllowChunkedLength).
 					MergeSlashes(cfg.MergeSlashes).
 					NumTrustedHops(cfg.XffNumTrustedHops).
-					AddFilter(envoy_v3.GlobalRateLimitFilter(envoyGlobalRateLimitConfig(cfg.RateLimitConfig))).
 					Get()
 
 				listeners[httpListener.Name] = envoy_v3.Listener(
@@ -442,7 +441,6 @@ func (c *ListenerCache) OnChange(root *dag.DAG) {
 					AllowChunkedLength(cfg.AllowChunkedLength).
 					MergeSlashes(cfg.MergeSlashes).
 					NumTrustedHops(cfg.XffNumTrustedHops).
-					AddFilter(envoy_v3.GlobalRateLimitFilter(envoyGlobalRateLimitConfig(cfg.RateLimitConfig))).
 					Get()
 
 				filters = envoy_v3.Filters(cm)
@@ -507,7 +505,6 @@ func (c *ListenerCache) OnChange(root *dag.DAG) {
 					AllowChunkedLength(cfg.AllowChunkedLength).
 					MergeSlashes(cfg.MergeSlashes).
 					NumTrustedHops(cfg.XffNumTrustedHops).
-					AddFilter(envoy_v3.GlobalRateLimitFilter(envoyGlobalRateLimitConfig(cfg.RateLimitConfig))).
 					Get()
 
 				// Default filter chain
@@ -541,21 +538,6 @@ func (c *ListenerCache) OnChange(root *dag.DAG) {
 	}
 
 	c.Update(listeners)
-}
-
-func envoyGlobalRateLimitConfig(config *RateLimitConfig) *envoy_v3.GlobalRateLimitConfig {
-	if config == nil {
-		return nil
-	}
-
-	return &envoy_v3.GlobalRateLimitConfig{
-		ExtensionService:        config.ExtensionService,
-		SNI:                     config.SNI,
-		FailOpen:                config.FailOpen,
-		Timeout:                 config.Timeout,
-		Domain:                  config.Domain,
-		EnableXRateLimitHeaders: config.EnableXRateLimitHeaders,
-	}
 }
 
 func proxyProtocol(useProxy bool) []*envoy_listener_v3.ListenerFilter {

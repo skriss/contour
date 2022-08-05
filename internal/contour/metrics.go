@@ -19,11 +19,9 @@ package contour
 import (
 	"time"
 
-	contour_api_v1 "github.com/projectcontour/contour/apis/projectcontour/v1"
 	"github.com/projectcontour/contour/internal/dag"
 	"github.com/projectcontour/contour/internal/k8s"
 	"github.com/projectcontour/contour/internal/metrics"
-	"github.com/projectcontour/contour/internal/status"
 	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/client-go/tools/cache"
 )
@@ -63,26 +61,18 @@ type RebuildMetricsObserver struct {
 	// Metrics to emit.
 	metrics *metrics.Metrics
 
-	// httpProxyMetricsEnabled will become ready to read when this EventHandler becomes
-	// the leader. If httpProxyMetricsEnabled is not readable, or nil, status events will
-	// be suppressed.
-	httpProxyMetricsEnabled chan struct{}
-
 	// NextObserver contains the stack of dag.Observers that act on DAG rebuilds.
 	nextObserver dag.Observer
 }
 
 func NewRebuildMetricsObserver(metrics *metrics.Metrics, nextObserver dag.Observer) *RebuildMetricsObserver {
 	return &RebuildMetricsObserver{
-		metrics:                 metrics,
-		nextObserver:            nextObserver,
-		httpProxyMetricsEnabled: make(chan struct{}),
+		metrics:      metrics,
+		nextObserver: nextObserver,
 	}
 }
 
-func (m *RebuildMetricsObserver) OnElectedLeader() {
-	close(m.httpProxyMetricsEnabled)
-}
+func (m *RebuildMetricsObserver) OnElectedLeader() {}
 
 func (m *RebuildMetricsObserver) OnChange(d *dag.DAG) {
 	m.metrics.SetDAGLastRebuilt(time.Now())
@@ -91,48 +81,4 @@ func (m *RebuildMetricsObserver) OnChange(d *dag.DAG) {
 	timer := prometheus.NewTimer(m.metrics.CacheHandlerOnUpdateSummary)
 	m.nextObserver.OnChange(d)
 	timer.ObserveDuration()
-
-	select {
-	case <-m.httpProxyMetricsEnabled:
-		m.metrics.SetHTTPProxyMetric(calculateRouteMetric(d.StatusCache.GetProxyUpdates()))
-	default:
-	}
-}
-
-func calculateRouteMetric(updates []*status.ProxyUpdate) metrics.RouteMetric {
-	proxyMetricTotal := make(map[metrics.Meta]int)
-	proxyMetricValid := make(map[metrics.Meta]int)
-	proxyMetricInvalid := make(map[metrics.Meta]int)
-	proxyMetricOrphaned := make(map[metrics.Meta]int)
-	proxyMetricRoots := make(map[metrics.Meta]int)
-
-	for _, u := range updates {
-		calcMetrics(u, proxyMetricValid, proxyMetricInvalid, proxyMetricOrphaned, proxyMetricTotal)
-		if u.Vhost != "" {
-			proxyMetricRoots[metrics.Meta{VHost: u.Vhost, Namespace: u.Fullname.Namespace}]++
-		}
-	}
-
-	return metrics.RouteMetric{
-		Invalid:  proxyMetricInvalid,
-		Valid:    proxyMetricValid,
-		Orphaned: proxyMetricOrphaned,
-		Total:    proxyMetricTotal,
-		Root:     proxyMetricRoots,
-	}
-}
-
-func calcMetrics(u *status.ProxyUpdate, metricValid map[metrics.Meta]int, metricInvalid map[metrics.Meta]int, metricOrphaned map[metrics.Meta]int, metricTotal map[metrics.Meta]int) {
-	validCond := u.ConditionFor(status.ValidCondition)
-	switch validCond.Status {
-	case contour_api_v1.ConditionTrue:
-		metricValid[metrics.Meta{VHost: u.Vhost, Namespace: u.Fullname.Namespace}]++
-	case contour_api_v1.ConditionFalse:
-		if _, ok := validCond.GetError(contour_api_v1.ConditionTypeOrphanedError); ok {
-			metricOrphaned[metrics.Meta{Namespace: u.Fullname.Namespace}]++
-		} else {
-			metricInvalid[metrics.Meta{VHost: u.Vhost, Namespace: u.Fullname.Namespace}]++
-		}
-	}
-	metricTotal[metrics.Meta{Namespace: u.Fullname.Namespace}]++
 }

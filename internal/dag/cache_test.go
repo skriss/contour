@@ -188,83 +188,6 @@ func TestKubernetesCacheInsert(t *testing.T) {
 			},
 			want: false,
 		},
-		"insert secret referenced by ingress via tls delegation": {
-			pre: []interface{}{
-				&networking_v1.Ingress{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "www",
-						Namespace: "extra",
-					},
-					Spec: networking_v1.IngressSpec{
-						TLS: []networking_v1.IngressTLS{{
-							SecretName: "default/secret",
-						}},
-					},
-				},
-				&contour_api_v1.TLSCertificateDelegation{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "delegation",
-						Namespace: "default",
-					},
-					Spec: contour_api_v1.TLSCertificateDelegationSpec{
-						Delegations: []contour_api_v1.CertificateDelegation{{
-							SecretName: "secret",
-							TargetNamespaces: []string{
-								"extra",
-							},
-						}},
-					},
-				},
-			},
-			obj: &v1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "secret",
-					Namespace: "default",
-				},
-				Type: v1.SecretTypeTLS,
-				Data: secretdata(fixture.CERTIFICATE, fixture.RSA_PRIVATE_KEY),
-			},
-			want: true,
-		},
-		"insert secret referenced by ingress via wildcard tls delegation": {
-			pre: []interface{}{
-				&networking_v1.Ingress{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "www",
-						Namespace: "extra",
-					},
-					Spec: networking_v1.IngressSpec{
-						TLS: []networking_v1.IngressTLS{{
-							SecretName: "default/secret",
-						}},
-					},
-				},
-
-				&contour_api_v1.TLSCertificateDelegation{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "delegation",
-						Namespace: "default",
-					},
-					Spec: contour_api_v1.TLSCertificateDelegationSpec{
-						Delegations: []contour_api_v1.CertificateDelegation{{
-							SecretName: "secret",
-							TargetNamespaces: []string{
-								"*",
-							},
-						}},
-					},
-				},
-			},
-			obj: &v1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "secret",
-					Namespace: "default",
-				},
-				Type: v1.SecretTypeTLS,
-				Data: secretdata(fixture.CERTIFICATE, fixture.RSA_PRIVATE_KEY),
-			},
-			want: true,
-		},
 		"insert secret referenced by httpproxy": {
 			pre: []interface{}{
 				&contour_api_v1.HTTPProxy{
@@ -278,86 +201,6 @@ func TestKubernetesCacheInsert(t *testing.T) {
 								SecretName: "secret",
 							},
 						},
-					},
-				},
-			},
-			obj: &v1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "secret",
-					Namespace: "default",
-				},
-				Type: v1.SecretTypeTLS,
-				Data: secretdata(fixture.CERTIFICATE, fixture.RSA_PRIVATE_KEY),
-			},
-			want: true,
-		},
-		"insert secret referenced by httpproxy via tls delegation": {
-			pre: []interface{}{
-				&contour_api_v1.HTTPProxy{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "simple",
-						Namespace: "extra",
-					},
-					Spec: contour_api_v1.HTTPProxySpec{
-						VirtualHost: &contour_api_v1.VirtualHost{
-							TLS: &contour_api_v1.TLS{
-								SecretName: "default/secret",
-							},
-						},
-					},
-				},
-				&contour_api_v1.TLSCertificateDelegation{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "delegation",
-						Namespace: "default",
-					},
-					Spec: contour_api_v1.TLSCertificateDelegationSpec{
-						Delegations: []contour_api_v1.CertificateDelegation{{
-							SecretName: "secret",
-							TargetNamespaces: []string{
-								"extra",
-							},
-						}},
-					},
-				},
-			},
-			obj: &v1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "secret",
-					Namespace: "default",
-				},
-				Type: v1.SecretTypeTLS,
-				Data: secretdata(fixture.CERTIFICATE, fixture.RSA_PRIVATE_KEY),
-			},
-			want: true,
-		},
-		"insert secret referenced by httpproxy via wildcard tls delegation": {
-			pre: []interface{}{
-				&contour_api_v1.HTTPProxy{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "simple",
-						Namespace: "extra",
-					},
-					Spec: contour_api_v1.HTTPProxySpec{
-						VirtualHost: &contour_api_v1.VirtualHost{
-							TLS: &contour_api_v1.TLS{
-								SecretName: "default/secret",
-							},
-						},
-					},
-				},
-				&contour_api_v1.TLSCertificateDelegation{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "delegation",
-						Namespace: "default",
-					},
-					Spec: contour_api_v1.TLSCertificateDelegationSpec{
-						Delegations: []contour_api_v1.CertificateDelegation{{
-							SecretName: "secret",
-							TargetNamespaces: []string{
-								"*",
-							},
-						}},
 					},
 				},
 			},
@@ -697,15 +540,6 @@ func TestKubernetesCacheInsert(t *testing.T) {
 				},
 				Spec: contour_api_v1.HTTPProxySpec{
 					IngressClassName: "nginx",
-				},
-			},
-			want: true,
-		},
-		"insert tls contour_api_v1/v1.certificatedelegation": {
-			obj: &contour_api_v1.TLSCertificateDelegation{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "delegate",
-					Namespace: "default",
 				},
 			},
 			want: true,
@@ -1698,21 +1532,6 @@ func TestSecretTriggersRebuild(t *testing.T) {
 		},
 	}
 
-	tlsCertificateDelegation := func(namespace, name string, targetNamespaces ...string) *contour_api_v1.TLSCertificateDelegation {
-		return &contour_api_v1.TLSCertificateDelegation{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      name,
-				Namespace: namespace,
-			},
-			Spec: contour_api_v1.TLSCertificateDelegationSpec{
-				Delegations: []contour_api_v1.CertificateDelegation{{
-					SecretName:       name,
-					TargetNamespaces: targetNamespaces,
-				}},
-			},
-		}
-	}
-
 	ingress := func(namespace, name, secretName string) *networking_v1.Ingress {
 		return &networking_v1.Ingress{
 			ObjectMeta: metav1.ObjectMeta{
@@ -1776,22 +1595,6 @@ func TestSecretTriggersRebuild(t *testing.T) {
 			secret: secret("default", "secret"),
 			want:   true,
 		},
-		"ingress with delegated secret (specific namespace) triggers rebuild": {
-			cache: cache(
-				tlsCertificateDelegation("default", "tlscert", "user"),
-				ingress("user", "ingress", "default/tlscert"),
-			),
-			secret: secret("default", "tlscert"),
-			want:   true,
-		},
-		"ingress with delegated secret ('*' namespace) triggers rebuild": {
-			cache: cache(
-				tlsCertificateDelegation("default", "tlscert", "*"),
-				ingress("user", "ingress", "default/tlscert"),
-			),
-			secret: secret("default", "tlscert"),
-			want:   true,
-		},
 		"httpproxy empty vhost does not trigger rebuild": {
 			cache: cache(
 				&contour_api_v1.HTTPProxy{
@@ -1825,22 +1628,6 @@ func TestSecretTriggersRebuild(t *testing.T) {
 		"httpproxy secret triggers rebuild": {
 			cache: cache(
 				httpProxy("default", "proxy", "tlscert"),
-			),
-			secret: secret("default", "tlscert"),
-			want:   true,
-		},
-		"httpproxy with delegated secret (specific namespace) triggers rebuild": {
-			cache: cache(
-				tlsCertificateDelegation("default", "tlscert", "user"),
-				httpProxy("user", "ingress", "default/tlscert"),
-			),
-			secret: secret("default", "tlscert"),
-			want:   true,
-		},
-		"httpproxy with delegated secret ('*' namespace) triggers rebuild": {
-			cache: cache(
-				tlsCertificateDelegation("default", "tlscert", "*"),
-				httpProxy("user", "ingress", "default/tlscert"),
 			),
 			secret: secret("default", "tlscert"),
 			want:   true,

@@ -940,3 +940,7 @@ func wildcardDomainHeaderMatch(fqdn string) HeaderMatchCondition {
 		Value:     singleDNSLabelWildcardRegex + regexp.QuoteMeta(fqdn[1:]),
 	}
 }
+
+const singleDNSLabelWildcardRegex = "^[a-z0-9]([-a-z0-9]*[a-z0-9])?"
+
+var _ = regexp.MustCompile(singleDNSLabelWildcardRegex)

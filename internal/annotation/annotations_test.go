@@ -537,8 +537,6 @@ func kindOf(obj interface{}) string {
 		return "Ingress"
 	case *contour_api_v1.HTTPProxy:
 		return "HTTPProxy"
-	case *contour_api_v1.TLSCertificateDelegation:
-		return "TLSCertificateDelegation"
 	default:
 		return ""
 	}

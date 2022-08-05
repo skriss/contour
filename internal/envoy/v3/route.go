@@ -46,16 +46,6 @@ func VirtualHostAndRoutes(vh *dag.VirtualHost, dagRoutes []*dag.Route, secure bo
 	if vh.CORSPolicy != nil {
 		evh.Cors = corsPolicy(vh.CORSPolicy)
 	}
-	if vh.RateLimitPolicy != nil && vh.RateLimitPolicy.Local != nil {
-		if evh.TypedPerFilterConfig == nil {
-			evh.TypedPerFilterConfig = map[string]*any.Any{}
-		}
-		evh.TypedPerFilterConfig["envoy.filters.http.local_ratelimit"] = LocalRateLimitConfig(vh.RateLimitPolicy.Local, "vhost."+vh.Name)
-	}
-
-	if vh.RateLimitPolicy != nil && vh.RateLimitPolicy.Global != nil {
-		evh.RateLimits = GlobalRateLimits(vh.RateLimitPolicy.Global.Descriptors)
-	}
 
 	return evh
 }
@@ -96,12 +86,6 @@ func buildRoute(dagRoute *dag.Route, vhostName string, secure bool, authService 
 		if dagRoute.ResponseHeadersPolicy != nil {
 			rt.ResponseHeadersToAdd = headerValueList(dagRoute.ResponseHeadersPolicy.Set, false)
 			rt.ResponseHeadersToRemove = dagRoute.ResponseHeadersPolicy.Remove
-		}
-		if dagRoute.RateLimitPolicy != nil && dagRoute.RateLimitPolicy.Local != nil {
-			if rt.TypedPerFilterConfig == nil {
-				rt.TypedPerFilterConfig = map[string]*any.Any{}
-			}
-			rt.TypedPerFilterConfig["envoy.filters.http.local_ratelimit"] = LocalRateLimitConfig(dagRoute.RateLimitPolicy.Local, "vhost."+vhostName)
 		}
 
 		// If authorization is enabled on this host, we may need to set per-route filter overrides.
@@ -274,10 +258,6 @@ func routeRoute(r *dag.Route) *envoy_route_v3.Route_Route {
 		PrefixRewrite:         r.PrefixRewrite,
 		HashPolicy:            hashPolicy(r.RequestHashPolicies),
 		RequestMirrorPolicies: mirrorPolicy(r),
-	}
-
-	if r.RateLimitPolicy != nil && r.RateLimitPolicy.Global != nil {
-		ra.RateLimits = GlobalRateLimits(r.RateLimitPolicy.Global.Descriptors)
 	}
 
 	// Check for host header policy and set if found

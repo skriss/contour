@@ -37,7 +37,6 @@ import (
 	"github.com/projectcontour/contour/internal/k8s"
 	"github.com/projectcontour/contour/internal/leadership"
 	"github.com/projectcontour/contour/internal/metrics"
-	"github.com/projectcontour/contour/internal/timeout"
 	"github.com/projectcontour/contour/internal/xds"
 	contour_xds_v3 "github.com/projectcontour/contour/internal/xds/v3"
 	"github.com/projectcontour/contour/internal/xdscache"
@@ -53,7 +52,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/utils/pointer"
 	ctrl_cache "sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -351,10 +349,6 @@ func (s *Server) doServe() error {
 		ConnectionBalancer:           contourConfiguration.Envoy.Listener.ConnectionBalancer,
 	}
 
-	if listenerConfig.RateLimitConfig, err = s.setupRateLimitService(contourConfiguration); err != nil {
-		return err
-	}
-
 	contourMetrics := metrics.NewMetrics(s.registry)
 
 	// Endpoints updates are handled directly by the EndpointsTranslator
@@ -569,50 +563,6 @@ func (s *Server) doServe() error {
 
 	// GO!
 	return s.mgr.Start(signals.SetupSignalHandler())
-}
-
-func (s *Server) setupRateLimitService(contourConfiguration contour_api_v1alpha1.ContourConfigurationSpec) (*xdscache_v3.RateLimitConfig, error) {
-	if contourConfiguration.RateLimitService == nil {
-		return nil, nil
-	}
-
-	// ensure the specified ExtensionService exists
-	extensionSvc := &contour_api_v1alpha1.ExtensionService{}
-	key := client.ObjectKey{
-		Namespace: contourConfiguration.RateLimitService.ExtensionService.Namespace,
-		Name:      contourConfiguration.RateLimitService.ExtensionService.Name,
-	}
-
-	// Using GetAPIReader() here because the manager's caches won't be started yet,
-	// so reads from the manager's client (which uses the caches for reads) will fail.
-	if err := s.mgr.GetAPIReader().Get(context.Background(), key, extensionSvc); err != nil {
-		return nil, fmt.Errorf("error getting rate limit extension service %s: %v", key, err)
-	}
-
-	// get the response timeout from the ExtensionService
-	var responseTimeout timeout.Setting
-	var err error
-
-	if tp := extensionSvc.Spec.TimeoutPolicy; tp != nil {
-		responseTimeout, err = timeout.Parse(tp.Response)
-		if err != nil {
-			return nil, fmt.Errorf("error parsing rate limit extension service %s response timeout: %v", key, err)
-		}
-	}
-
-	var sni string
-	if extensionSvc.Spec.UpstreamValidation != nil {
-		sni = extensionSvc.Spec.UpstreamValidation.SubjectName
-	}
-
-	return &xdscache_v3.RateLimitConfig{
-		ExtensionService:        key,
-		SNI:                     sni,
-		Domain:                  contourConfiguration.RateLimitService.Domain,
-		Timeout:                 responseTimeout,
-		FailOpen:                pointer.BoolDeref(contourConfiguration.RateLimitService.FailOpen, false),
-		EnableXRateLimitHeaders: pointer.BoolDeref(contourConfiguration.RateLimitService.EnableXRateLimitHeaders, false),
-	}, nil
 }
 
 func (s *Server) setupDebugService(debugConfig contour_api_v1alpha1.DebugConfig, builder *dag.Builder) error {

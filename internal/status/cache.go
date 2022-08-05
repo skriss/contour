@@ -16,9 +16,6 @@
 package status
 
 import (
-	"time"
-
-	contour_api_v1 "github.com/projectcontour/contour/apis/projectcontour/v1"
 	"github.com/projectcontour/contour/internal/k8s"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -39,7 +36,6 @@ func NewCache(gateway types.NamespacedName, gatewayController gatewayapi_v1beta1
 	return Cache{
 		gatewayRef:        gateway,
 		gatewayController: gatewayController,
-		proxyUpdates:      make(map[types.NamespacedName]*ProxyUpdate),
 		gatewayUpdates:    make(map[types.NamespacedName]*GatewayStatusUpdate),
 		routeUpdates:      make(map[types.NamespacedName]*RouteStatusUpdate),
 		entries:           make(map[string]map[types.NamespacedName]CacheEntry),
@@ -48,7 +44,6 @@ func NewCache(gateway types.NamespacedName, gatewayController gatewayapi_v1beta1
 
 type CacheEntry interface {
 	AsStatusUpdate() k8s.StatusUpdate
-	ConditionFor(ConditionType) *contour_api_v1.DetailedCondition
 }
 
 // Cache holds status updates from the DAG back towards Kubernetes.
@@ -58,7 +53,6 @@ type Cache struct {
 	gatewayRef        types.NamespacedName
 	gatewayController gatewayapi_v1beta1.GatewayController
 
-	proxyUpdates   map[types.NamespacedName]*ProxyUpdate
 	gatewayUpdates map[types.NamespacedName]*GatewayStatusUpdate
 	routeUpdates   map[types.NamespacedName]*RouteStatusUpdate
 
@@ -96,16 +90,6 @@ func (c *Cache) Put(obj metav1.Object, e CacheEntry) {
 func (c *Cache) GetStatusUpdates() []k8s.StatusUpdate {
 	var flattened []k8s.StatusUpdate
 
-	for fullname, pu := range c.proxyUpdates {
-		update := k8s.StatusUpdate{
-			NamespacedName: fullname,
-			Resource:       &contour_api_v1.HTTPProxy{},
-			Mutator:        pu,
-		}
-
-		flattened = append(flattened, update)
-	}
-
 	for fullname, routeUpdate := range c.routeUpdates {
 		update := k8s.StatusUpdate{
 			NamespacedName: fullname,
@@ -133,18 +117,6 @@ func (c *Cache) GetStatusUpdates() []k8s.StatusUpdate {
 	}
 
 	return flattened
-}
-
-// GetProxyUpdates gets the underlying ProxyUpdate objects
-// from the cache, used by various things (`internal/contour/metrics.go` and `internal/dag/status_test.go`)
-// to retrieve info they need.
-// TODO(youngnick)#2969: This could conceivably be replaced with a Walk pattern.
-func (c *Cache) GetProxyUpdates() []*ProxyUpdate {
-	var allUpdates []*ProxyUpdate
-	for _, pu := range c.proxyUpdates {
-		allUpdates = append(allUpdates, pu)
-	}
-	return allUpdates
 }
 
 // GetGatewayUpdates gets the underlying GatewayStatusUpdate objects from the cache.
@@ -183,41 +155,6 @@ func (c *Cache) GatewayStatusAccessor(nsName types.NamespacedName, generation in
 			return
 		}
 		c.gatewayUpdates[gu.FullName] = gu
-	}
-}
-
-// ProxyAccessor returns a ProxyUpdate that allows a client to build up a list of
-// errors and warnings to go onto the proxy as conditions, and a function to commit the change
-// back to the cache when everything is done.
-// The commit function pattern is used so that the ProxyUpdate does not need to know anything
-// the cache internals.
-func (c *Cache) ProxyAccessor(proxy *contour_api_v1.HTTPProxy) (*ProxyUpdate, func()) {
-	pu := &ProxyUpdate{
-		Fullname:       k8s.NamespacedNameOf(proxy),
-		Generation:     proxy.Generation,
-		TransitionTime: metav1.NewTime(time.Now()),
-		Conditions:     make(map[ConditionType]*contour_api_v1.DetailedCondition),
-	}
-
-	return pu, func() {
-		if len(pu.Conditions) == 0 {
-			return
-		}
-
-		_, ok := c.proxyUpdates[pu.Fullname]
-		if ok {
-			// When we're committing, if we already have a Valid Condition with an error, and we're trying to
-			// set the object back to Valid, skip the commit, as we've visited too far down.
-			// If this is removed, the status reporting for when a parent delegates to a child that delegates to itself
-			// will not work. Yes, I know, problems everywhere. I'm sorry.
-			// TODO(youngnick)#2968: This issue has more details.
-			if c.proxyUpdates[pu.Fullname].Conditions[ValidCondition].Status == contour_api_v1.ConditionFalse {
-				if pu.Conditions[ValidCondition].Status == contour_api_v1.ConditionTrue {
-					return
-				}
-			}
-		}
-		c.proxyUpdates[pu.Fullname] = pu
 	}
 }
 
