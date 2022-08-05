@@ -3,7 +3,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,8 +15,6 @@ package status
 import (
 	"testing"
 
-	contour_api_v1 "github.com/projectcontour/contour/apis/projectcontour/v1"
-	contour_api_v1alpha1 "github.com/projectcontour/contour/apis/projectcontour/v1alpha1"
 	"github.com/projectcontour/contour/internal/fixture"
 	"github.com/projectcontour/contour/internal/k8s"
 	"github.com/stretchr/testify/assert"
@@ -26,8 +24,6 @@ import (
 )
 
 type testCacheEntry struct {
-	ConditionCache
-
 	ID string
 }
 
@@ -43,39 +39,24 @@ func (t testCacheEntry) AsStatusUpdate() k8s.StatusUpdate {
 var _ CacheEntry = &testCacheEntry{}
 
 func TestCacheAcquisition(t *testing.T) {
-	ext := &contour_api_v1alpha1.ExtensionService{
-		ObjectMeta: fixture.ObjectMeta("test/ext"),
-	}
-	proxy := &contour_api_v1.HTTPProxy{
-		ObjectMeta: fixture.ObjectMeta("test/proxy"),
-	}
 	httpRoute := &gatewayapi_v1beta1.HTTPRoute{
 		ObjectMeta: fixture.ObjectMeta("test/httproute"),
 	}
 	cache := NewCache(types.NamespacedName{Name: "contour", Namespace: "projectcontour"}, "")
 
 	// Initial acquisition should be nil.
-	assert.Nil(t, cache.Get(proxy))
 	assert.Nil(t, cache.Get(httpRoute))
-	assert.Nil(t, cache.Get(ext))
 
 	newEntry := testCacheEntry{ID: "AA483012-A14F-4644-A3C9-FDBAAFA958C0"}
-	cache.Put(proxy, &newEntry)
-	cache.Put(ext, &newEntry)
 	cache.Put(httpRoute, &newEntry)
 
-	cachedEntry := cache.Get(proxy)
-	assert.Equal(t, &newEntry, cachedEntry)
-
-	cachedEntry = cache.Get(httpRoute)
+	cachedEntry := cache.Get(httpRoute)
 	assert.Equal(t, &newEntry, cachedEntry)
 
 	updates := cache.GetStatusUpdates()
-	assert.Equal(t, 3, len(updates))
+	assert.Equal(t, 1, len(updates))
 	assert.Equal(t, newEntry.ID, updates[0].NamespacedName.Name)
 
-	assert.Equal(t, 3, len(cache.entries))
-	assert.Equal(t, 1, len(cache.entries["HTTPProxy"]))
-	assert.Equal(t, 1, len(cache.entries["ExtensionService"]))
+	assert.Equal(t, 1, len(cache.entries))
 	assert.Equal(t, 1, len(cache.entries["HTTPRoute"]))
 }

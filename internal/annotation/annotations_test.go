@@ -17,12 +17,9 @@ import (
 	"fmt"
 	"testing"
 
-	contour_api_v1 "github.com/projectcontour/contour/apis/projectcontour/v1"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
-	networking_v1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 func TestParseUint32(t *testing.T) {
@@ -99,78 +96,6 @@ func TestParseint32(t *testing.T) {
 	}
 }
 
-func TestNumRetries(t *testing.T) {
-	tests := map[string]struct {
-		ingress *networking_v1.Ingress
-		want    uint32
-	}{
-		"blank": {
-			ingress: &networking_v1.Ingress{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "ing",
-					Annotations: map[string]string{
-						"projectcontour.io/num-retries": "",
-					},
-				},
-			},
-			want: 1,
-		},
-		"Set to 1": {
-			ingress: &networking_v1.Ingress{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "ing",
-					Annotations: map[string]string{
-						"projectcontour.io/num-retries": "1",
-					},
-				},
-			},
-			want: 1,
-		},
-		"Set to 0": {
-			ingress: &networking_v1.Ingress{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "ing",
-					Annotations: map[string]string{
-						"projectcontour.io/num-retries": "0",
-					},
-				},
-			},
-			want: 1,
-		},
-		"Set to -1": {
-			ingress: &networking_v1.Ingress{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "ing",
-					Annotations: map[string]string{
-						"projectcontour.io/num-retries": "-1",
-					},
-				},
-			},
-			want: 0,
-		},
-		"Set to 9": {
-			ingress: &networking_v1.Ingress{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "ing",
-					Annotations: map[string]string{
-						"projectcontour.io/num-retries": "9",
-					},
-				},
-			},
-			want: 9,
-		},
-	}
-
-	for name, tc := range tests {
-		t.Run(name, func(t *testing.T) {
-			got := NumRetries(tc.ingress)
-			if got != tc.want {
-				t.Fatalf("expected: %v, got %v", tc.want, got)
-			}
-		})
-	}
-}
-
 func TestParseUpstreamProtocols(t *testing.T) {
 	tests := map[string]struct {
 		a    map[string]string
@@ -216,175 +141,6 @@ func TestParseUpstreamProtocols(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			got := ParseUpstreamProtocols(tc.a)
 			assert.Equal(t, tc.want, got)
-		})
-	}
-}
-
-func TestWebsocketRoutes(t *testing.T) {
-	tests := map[string]struct {
-		a    *networking_v1.Ingress
-		want map[string]bool
-	}{
-		"empty": {
-			a: &networking_v1.Ingress{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						"projectcontour.io/websocket-routes": "",
-					},
-				},
-			},
-			want: map[string]bool{},
-		},
-		"empty with spaces": {
-			a: &networking_v1.Ingress{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						"projectcontour.io/websocket-routes": ", ,",
-					},
-				},
-			},
-			want: map[string]bool{},
-		},
-		"single value": {
-			a: &networking_v1.Ingress{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						"projectcontour.io/websocket-routes": "/ws1",
-					},
-				},
-			},
-			want: map[string]bool{
-				"/ws1": true,
-			},
-		},
-		"multiple values": {
-			a: &networking_v1.Ingress{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						"projectcontour.io/websocket-routes": "/ws1,/ws2",
-					},
-				},
-			},
-			want: map[string]bool{
-				"/ws1": true,
-				"/ws2": true,
-			},
-		},
-		"multiple values with spaces and invalid entries": {
-			a: &networking_v1.Ingress{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						"projectcontour.io/websocket-routes": " /ws1, , /ws2 ",
-					},
-				},
-			},
-			want: map[string]bool{
-				"/ws1": true,
-				"/ws2": true,
-			},
-		},
-	}
-
-	for name, tc := range tests {
-		t.Run(name, func(t *testing.T) {
-			got := WebsocketRoutes(tc.a)
-			assert.Equal(t, tc.want, got)
-		})
-	}
-}
-
-func TestTLSCertNamespace(t *testing.T) {
-	tests := map[string]struct {
-		a    *networking_v1.Ingress
-		want string
-	}{
-		"absent": {
-			a: &networking_v1.Ingress{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{},
-				},
-			},
-			want: "",
-		},
-		"empty": {
-			a: &networking_v1.Ingress{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						"projectcontour.io/tls-cert-namespace": "",
-					},
-				},
-			},
-			want: "",
-		},
-		"valid value": {
-			a: &networking_v1.Ingress{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						"projectcontour.io/tls-cert-namespace": "namespace-with-cert",
-					},
-				},
-			},
-			want: "namespace-with-cert",
-		},
-	}
-
-	for name, tc := range tests {
-		t.Run(name, func(t *testing.T) {
-			got := TLSCertNamespace(tc.a)
-			assert.Equal(t, tc.want, got)
-		})
-	}
-}
-
-func TestHttpAllowed(t *testing.T) {
-	tests := map[string]struct {
-		i     *networking_v1.Ingress
-		valid bool
-	}{
-		"basic ingress": {
-			i: &networking_v1.Ingress{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "simple",
-					Namespace: "default",
-				},
-				Spec: networking_v1.IngressSpec{
-					TLS: []networking_v1.IngressTLS{{
-						Hosts:      []string{"whatever.example.com"},
-						SecretName: "secret",
-					}},
-					DefaultBackend: backend("backend", intstr.FromInt(80)),
-				},
-			},
-			valid: true,
-		},
-		"kubernetes.io/ingress.allow-http: \"false\"": {
-			i: &networking_v1.Ingress{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "simple",
-					Namespace: "default",
-					Annotations: map[string]string{
-						"kubernetes.io/ingress.allow-http": "false",
-					},
-				},
-				Spec: networking_v1.IngressSpec{
-					TLS: []networking_v1.IngressTLS{{
-						Hosts:      []string{"whatever.example.com"},
-						SecretName: "secret",
-					}},
-					DefaultBackend: backend("backend", intstr.FromInt(80)),
-				},
-			},
-			valid: false,
-		},
-	}
-
-	for name, tc := range tests {
-		t.Run(name, func(t *testing.T) {
-			got := HTTPAllowed(tc.i)
-			want := tc.valid
-			if got != want {
-				t.Fatalf("got: %v, want: %v", got, want)
-			}
 		})
 	}
 }
@@ -445,19 +201,6 @@ func TestAnnotationKindValidation(t *testing.T) {
 				},
 			},
 		},
-		"httpproxy": {
-			obj: &contour_api_v1.HTTPProxy{},
-			annotations: map[string]status{
-				// Valid only on Service.
-				"projectcontour.io/max-requests": {
-					known: true, valid: false,
-				},
-				// Valid only on Ingress.
-				"projectcontour.io/websocket-routes": {
-					known: true, valid: false,
-				},
-			},
-		},
 		"namespaces": {
 			obj: &v1.Namespace{},
 			annotations: map[string]status{
@@ -477,8 +220,6 @@ func TestAnnotationKindValidation(t *testing.T) {
 	// table is valid.
 	for _, kind := range []string{
 		kindOf(&v1.Service{}),
-		kindOf(&networking_v1.Ingress{}),
-		kindOf(&contour_api_v1.HTTPProxy{}),
 	} {
 		for key := range annotationsByKind[kind] {
 			t.Run(fmt.Sprintf("%s is known and valid for %s", key, kind),
@@ -500,26 +241,6 @@ func TestAnnotationKindValidation(t *testing.T) {
 	}
 }
 
-func backend(name string, port intstr.IntOrString) *networking_v1.IngressBackend {
-	var portObj networking_v1.ServiceBackendPort
-	if port.Type == intstr.Int {
-		portObj = networking_v1.ServiceBackendPort{
-			Number: port.IntVal,
-		}
-	} else {
-		portObj = networking_v1.ServiceBackendPort{
-			Name: port.StrVal,
-		}
-	}
-
-	return &networking_v1.IngressBackend{
-		Service: &networking_v1.IngressServiceBackend{
-			Name: name,
-			Port: portObj,
-		},
-	}
-}
-
 // kindOf returns the kind string for the given Kubernetes object.
 //
 // The API machinery doesn't populate the metav1.TypeMeta field for
@@ -533,10 +254,6 @@ func kindOf(obj interface{}) string {
 		return "Secret"
 	case *v1.Service:
 		return "Service"
-	case *networking_v1.Ingress:
-		return "Ingress"
-	case *contour_api_v1.HTTPProxy:
-		return "HTTPProxy"
 	default:
 		return ""
 	}

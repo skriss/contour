@@ -18,8 +18,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/projectcontour/contour/internal/timeout"
-	networking_v1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -47,18 +45,6 @@ func IsKnown(key string) bool {
 }
 
 var annotationsByKind = map[string]map[string]struct{}{
-	"Ingress": {
-		"ingress.kubernetes.io/force-ssl-redirect":       {},
-		"kubernetes.io/ingress.allow-http":               {},
-		"kubernetes.io/ingress.class":                    {},
-		"projectcontour.io/ingress.class":                {},
-		"projectcontour.io/num-retries":                  {},
-		"projectcontour.io/response-timeout":             {},
-		"projectcontour.io/retry-on":                     {},
-		"projectcontour.io/tls-minimum-protocol-version": {},
-		"projectcontour.io/tls-cert-namespace":           {},
-		"projectcontour.io/websocket-routes":             {},
-	},
 	"Service": {
 		"projectcontour.io/max-connections":       {},
 		"projectcontour.io/max-pending-requests":  {},
@@ -67,10 +53,6 @@ var annotationsByKind = map[string]map[string]struct{}{
 		"projectcontour.io/upstream-protocol.h2":  {},
 		"projectcontour.io/upstream-protocol.h2c": {},
 		"projectcontour.io/upstream-protocol.tls": {},
-	},
-	"HTTPProxy": {
-		"kubernetes.io/ingress.class":     {},
-		"projectcontour.io/ingress.class": {},
 	},
 	"Secret": {
 		"projectcontour.io/generated-by-version": {},
@@ -137,61 +119,6 @@ func ParseUpstreamProtocols(m map[string]string) map[string]string {
 		}
 	}
 	return up
-}
-
-// HTTPAllowed returns true unless the kubernetes.io/ingress.allow-http annotation is
-// present and set to false.
-func HTTPAllowed(i *networking_v1.Ingress) bool {
-	return !(i.Annotations["kubernetes.io/ingress.allow-http"] == "false")
-}
-
-// TLSRequired returns true if the ingress.kubernetes.io/force-ssl-redirect annotation is
-// present and set to true.
-func TLSRequired(i *networking_v1.Ingress) bool {
-	return i.Annotations["ingress.kubernetes.io/force-ssl-redirect"] == "true"
-}
-
-// TLSCertNamespace returns the namespace name of the delegated certificate if
-// projectcontour.io/tls-cert-namespace annotation is present and non-empty
-func TLSCertNamespace(i *networking_v1.Ingress) string {
-	return ContourAnnotation(i, "tls-cert-namespace")
-}
-
-// WebsocketRoutes retrieves the details of routes that should have websockets enabled from the
-// associated websocket-routes annotation.
-func WebsocketRoutes(i *networking_v1.Ingress) map[string]bool {
-	routes := make(map[string]bool)
-	for _, v := range strings.Split(i.Annotations["projectcontour.io/websocket-routes"], ",") {
-		route := strings.TrimSpace(v)
-		if route != "" {
-			routes[route] = true
-		}
-	}
-	return routes
-}
-
-// NumRetries returns the number of retries specified by the
-// "projectcontour.io/num-retries" annotation.
-func NumRetries(i *networking_v1.Ingress) uint32 {
-
-	val := parseInt32(ContourAnnotation(i, "num-retries"))
-
-	// If set to -1, then retries set to 0. If set to 0 or
-	// not supplied, the value is set to the Envoy default of 1.
-	// Otherwise the value supplied is returned.
-	switch val {
-	case -1:
-		return 0
-	case 1, 0:
-		return 1
-	}
-
-	return uint32(val)
-}
-
-// PerTryTimeout returns the duration envoy will wait per retry cycle.
-func PerTryTimeout(i *networking_v1.Ingress) (timeout.Setting, error) {
-	return timeout.Parse(ContourAnnotation(i, "per-try-timeout"))
 }
 
 // IngressClass returns the first matching ingress class for the following

@@ -23,8 +23,6 @@ import (
 	envoy_service_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/service/cluster/v3"
 	discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	envoy_service_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/service/endpoint/v3"
-	envoy_service_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/service/listener/v3"
-	envoy_service_route_v3 "github.com/envoyproxy/go-control-plane/envoy/service/route/v3"
 	envoy_service_runtime_v3 "github.com/envoyproxy/go-control-plane/envoy/service/runtime/v3"
 	envoy_service_secret_v3 "github.com/envoyproxy/go-control-plane/envoy/service/secret/v3"
 	resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
@@ -41,7 +39,6 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 	v1 "k8s.io/api/core/v1"
-	networking_v1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
@@ -106,65 +103,7 @@ func TestGRPC(t *testing.T) {
 			checkrecv(t, stream)                      // check we receive one notification
 			checktimeout(t, stream)                   // check that the second receive times out
 		},
-		"StreamListeners": func(t *testing.T, cc *grpc.ClientConn) {
-			// add an ingress, which will create a non tls listener
-			eh.OnAdd(&networking_v1.Ingress{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "httpbin-org",
-					Namespace: "default",
-				},
-				Spec: networking_v1.IngressSpec{
-					Rules: []networking_v1.IngressRule{{
-						Host: "httpbin.org",
-						IngressRuleValue: networking_v1.IngressRuleValue{
-							HTTP: &networking_v1.HTTPIngressRuleValue{
-								Paths: []networking_v1.HTTPIngressPath{{
-									Backend: *backend("httpbin-org", 80),
-								}},
-							},
-						},
-					}},
-				},
-			})
 
-			lds := envoy_service_listener_v3.NewListenerDiscoveryServiceClient(cc)
-			ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
-			defer cancel()
-			stream, err := lds.StreamListeners(ctx)
-			require.NoError(t, err)
-			sendreq(t, stream, resource.ListenerType) // send initial notification
-			checkrecv(t, stream)                      // check we receive one notification
-			checktimeout(t, stream)                   // check that the second receive times out
-		},
-		"StreamRoutes": func(t *testing.T, cc *grpc.ClientConn) {
-			eh.OnAdd(&networking_v1.Ingress{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "httpbin-org",
-					Namespace: "default",
-				},
-				Spec: networking_v1.IngressSpec{
-					Rules: []networking_v1.IngressRule{{
-						Host: "httpbin.org",
-						IngressRuleValue: networking_v1.IngressRuleValue{
-							HTTP: &networking_v1.HTTPIngressRuleValue{
-								Paths: []networking_v1.HTTPIngressPath{{
-									Backend: *backend("httpbin-org", 80),
-								}},
-							},
-						},
-					}},
-				},
-			})
-
-			rds := envoy_service_route_v3.NewRouteDiscoveryServiceClient(cc)
-			ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
-			defer cancel()
-			stream, err := rds.StreamRoutes(ctx)
-			require.NoError(t, err)
-			sendreq(t, stream, resource.RouteType) // send initial notification
-			checkrecv(t, stream)                   // check we receive one notification
-			checktimeout(t, stream)                // check that the second receive times out
-		},
 		"StreamSecrets": func(t *testing.T, cc *grpc.ClientConn) {
 			eh.OnAdd(&v1.Secret{
 				ObjectMeta: metav1.ObjectMeta{

@@ -47,7 +47,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"gopkg.in/alecthomas/kingpin.v2"
 	corev1 "k8s.io/api/core/v1"
-	networking_v1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/kubernetes"
@@ -450,7 +449,6 @@ func (s *Server) doServe() error {
 	for name, r := range map[string]client.Object{
 		"contourconfigurations": &contour_api_v1alpha1.ContourConfiguration{},
 		"services":              &corev1.Service{},
-		"ingresses":             &networking_v1.Ingress{},
 	} {
 		if err := informOnResource(r, eventHandler, s.mgr.GetCache()); err != nil {
 			s.log.WithError(err).WithField("resource", name).Fatal("failed to create informer")
