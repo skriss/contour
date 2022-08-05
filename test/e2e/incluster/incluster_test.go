@@ -99,7 +99,8 @@ var _ = Describe("Incluster", func() {
 		}, time.Minute, time.Millisecond*50)
 	})
 
-	f.NamespacedTest("smoke-test", testSimpleSmoke)
+	// TODO: replace with a Gateway API-based smoke test
+	// f.NamespacedTest("smoke-test", testSimpleSmoke)
 
 	f.NamespacedTest("leader-election", testLeaderElection)
 

@@ -24,7 +24,6 @@ import (
 	"time"
 
 	envoy_server_v3 "github.com/envoyproxy/go-control-plane/pkg/server/v3"
-	contour_api_v1 "github.com/projectcontour/contour/apis/projectcontour/v1"
 	contour_api_v1alpha1 "github.com/projectcontour/contour/apis/projectcontour/v1alpha1"
 	"github.com/projectcontour/contour/internal/annotation"
 	"github.com/projectcontour/contour/internal/contour"
@@ -455,12 +454,9 @@ func (s *Server) doServe() error {
 
 	// Inform on default resources.
 	for name, r := range map[string]client.Object{
-		"httpproxies":               &contour_api_v1.HTTPProxy{},
-		"tlscertificatedelegations": &contour_api_v1.TLSCertificateDelegation{},
-		"extensionservices":         &contour_api_v1alpha1.ExtensionService{},
-		"contourconfigurations":     &contour_api_v1alpha1.ContourConfiguration{},
-		"services":                  &corev1.Service{},
-		"ingresses":                 &networking_v1.Ingress{},
+		"contourconfigurations": &contour_api_v1alpha1.ContourConfiguration{},
+		"services":              &corev1.Service{},
+		"ingresses":             &networking_v1.Ingress{},
 	} {
 		if err := informOnResource(r, eventHandler, s.mgr.GetCache()); err != nil {
 			s.log.WithError(err).WithField("resource", name).Fatal("failed to create informer")
@@ -839,81 +835,10 @@ type dagBuilderConfig struct {
 }
 
 func (s *Server) getDAGBuilder(dbc dagBuilderConfig) *dag.Builder {
-
-	var (
-		requestHeadersPolicy       dag.HeadersPolicy
-		responseHeadersPolicy      dag.HeadersPolicy
-		applyHeaderPolicyToIngress bool
-	)
-
-	if dbc.headersPolicy != nil {
-		if dbc.headersPolicy.RequestHeadersPolicy != nil {
-			if dbc.headersPolicy.RequestHeadersPolicy.Set != nil {
-				requestHeadersPolicy.Set = make(map[string]string)
-				for k, v := range dbc.headersPolicy.RequestHeadersPolicy.Set {
-					requestHeadersPolicy.Set[k] = v
-				}
-			}
-			if dbc.headersPolicy.RequestHeadersPolicy.Remove != nil {
-				requestHeadersPolicy.Remove = make([]string, 0, len(dbc.headersPolicy.RequestHeadersPolicy.Remove))
-				requestHeadersPolicy.Remove = append(requestHeadersPolicy.Remove, dbc.headersPolicy.RequestHeadersPolicy.Remove...)
-			}
-		}
-
-		if dbc.headersPolicy.ResponseHeadersPolicy != nil {
-			if dbc.headersPolicy.ResponseHeadersPolicy.Set != nil {
-				responseHeadersPolicy.Set = make(map[string]string)
-				for k, v := range dbc.headersPolicy.ResponseHeadersPolicy.Set {
-					responseHeadersPolicy.Set[k] = v
-				}
-			}
-			if dbc.headersPolicy.ResponseHeadersPolicy.Remove != nil {
-				responseHeadersPolicy.Remove = make([]string, 0, len(dbc.headersPolicy.ResponseHeadersPolicy.Remove))
-				responseHeadersPolicy.Remove = append(responseHeadersPolicy.Remove, dbc.headersPolicy.ResponseHeadersPolicy.Remove...)
-			}
-		}
-
-		applyHeaderPolicyToIngress = *dbc.headersPolicy.ApplyToIngress
-	}
-
-	var requestHeadersPolicyIngress dag.HeadersPolicy
-	var responseHeadersPolicyIngress dag.HeadersPolicy
-
-	if applyHeaderPolicyToIngress {
-		requestHeadersPolicyIngress = requestHeadersPolicy
-		responseHeadersPolicyIngress = responseHeadersPolicy
-	}
-
 	s.log.Debugf("EnableExternalNameService is set to %t", dbc.enableExternalNameService)
 
 	// Get the appropriate DAG processors.
-	dagProcessors := []dag.Processor{
-		&dag.IngressProcessor{
-			EnableExternalNameService: dbc.enableExternalNameService,
-			FieldLogger:               s.log.WithField("context", "IngressProcessor"),
-			ClientCertificate:         dbc.clientCert,
-			RequestHeadersPolicy:      &requestHeadersPolicyIngress,
-			ResponseHeadersPolicy:     &responseHeadersPolicyIngress,
-			ConnectTimeout:            dbc.connectTimeout,
-		},
-		&dag.ExtensionServiceProcessor{
-			// Note that ExtensionService does not support ExternalName, if it does get added,
-			// need to bring EnableExternalNameService in here too.
-			FieldLogger:       s.log.WithField("context", "ExtensionServiceProcessor"),
-			ClientCertificate: dbc.clientCert,
-			ConnectTimeout:    dbc.connectTimeout,
-		},
-		&dag.HTTPProxyProcessor{
-			EnableExternalNameService: dbc.enableExternalNameService,
-			DisablePermitInsecure:     dbc.disablePermitInsecure,
-			FallbackCertificate:       dbc.fallbackCert,
-			DNSLookupFamily:           dbc.dnsLookupFamily,
-			ClientCertificate:         dbc.clientCert,
-			RequestHeadersPolicy:      &requestHeadersPolicy,
-			ResponseHeadersPolicy:     &responseHeadersPolicy,
-			ConnectTimeout:            dbc.connectTimeout,
-		},
-	}
+	var dagProcessors []dag.Processor
 
 	if len(dbc.gatewayControllerName) > 0 || dbc.gatewayRef != nil {
 		dagProcessors = append(dagProcessors, &dag.GatewayAPIProcessor{
