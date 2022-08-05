@@ -8832,22 +8832,6 @@ rules:
   verbs:
   - update
 - apiGroups:
-  - networking.k8s.io
-  resources:
-  - ingresses
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - networking.k8s.io
-  resources:
-  - ingresses/status
-  verbs:
-  - create
-  - get
-  - update
-- apiGroups:
   - projectcontour.io
   resources:
   - contourconfigurations
@@ -8861,20 +8845,7 @@ rules:
 - apiGroups:
   - projectcontour.io
   resources:
-  - contourconfigurations
-  - extensionservices
-  - httpproxies
-  - tlscertificatedelegations
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - projectcontour.io
-  resources:
   - contourconfigurations/status
-  - extensionservices/status
-  - httpproxies/status
   verbs:
   - create
   - get
