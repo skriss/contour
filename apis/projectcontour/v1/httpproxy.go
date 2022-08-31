@@ -238,12 +238,51 @@ type VirtualHost struct {
 	//
 	// +optional
 	Authorization *AuthorizationServer `json:"authorization,omitempty"`
+
 	// Specifies the cross-origin policy to apply to the VirtualHost.
 	// +optional
 	CORSPolicy *CORSPolicy `json:"corsPolicy,omitempty"`
+
 	// The policy for rate limiting on the virtual host.
 	// +optional
 	RateLimitPolicy *RateLimitPolicy `json:"rateLimitPolicy,omitempty"`
+
+	// The policy for verifying JSON Web Tokens (JWTs) on the virtual host.
+	// +optional
+	JWTVerificationPolicy *JWTVerificationPolicy `json:"jwtVerificationPolicy,omitempty"`
+}
+
+type JWTVerificationPolicy struct {
+	// Providers specify how to verify JWTs.
+	Providers []JWTProvider `json:"providers,omitempty"`
+
+	// Rules match requests to their JWT verification requirements.
+	Rules []JWTRule `json:"rules,omitempty"`
+}
+
+type JWTProvider struct {
+	Name       string      `json:"name,omitempty"`
+	Issuer     string      `json:"issuer,omitempty"`
+	Audiences  []string    `json:"audiences,omitempty"`
+	RemoteJWKS *RemoteJWKS `json:"remoteJWKS,omitempty"`
+	LocalJWKS  *LocalJWKS  `json:"localJWKS,omitempty"`
+}
+
+type RemoteJWKS struct {
+	// TODO
+}
+
+type LocalJWKS struct {
+	SecretName string `json:"secretName,omitempty"`
+}
+
+type JWTRule struct {
+	Match        JWTMatch `json:"match,omitempty"`
+	ProviderName string   `json:"providerName,omitempty"`
+}
+
+type JWTMatch struct {
+	Prefix string `json:"prefix,omitempty"`
 }
 
 // TLS describes tls properties. The SNI names that will be matched on

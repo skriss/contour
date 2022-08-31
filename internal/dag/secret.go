@@ -94,8 +94,10 @@ func isValidSecret(secret *v1.Secret) (bool, error) {
 			}
 		}
 
+		_, containsJWKS := secret.Data["jwks"]
+
 		// Secret has neither CA nor CRL.
-		if !(containsCA || containsCRL) {
+		if !(containsCA || containsCRL || containsJWKS) {
 			return false, nil // Not an error.
 		}
 

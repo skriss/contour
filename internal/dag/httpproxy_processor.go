@@ -16,6 +16,7 @@ package dag
 import (
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"sort"
 	"strconv"
@@ -28,6 +29,7 @@ import (
 	"github.com/projectcontour/contour/internal/k8s"
 	"github.com/projectcontour/contour/internal/status"
 	"github.com/projectcontour/contour/internal/timeout"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -327,6 +329,39 @@ func (p *HTTPProxyProcessor) computeHTTPProxy(proxy *contour_api_v1.HTTPProxy) {
 						AllowPartialMessage: auth.WithRequestBody.AllowPartialMessage,
 						PackAsBytes:         auth.WithRequestBody.PackAsBytes,
 					}
+				}
+			}
+
+			if jwtPolicy := proxy.Spec.VirtualHost.JWTVerificationPolicy; jwtPolicy != nil {
+				svhost.JWTVerificationPolicy = &JWTVerificationPolicy{}
+
+				for _, provider := range jwtPolicy.Providers {
+					pr := JWTProvider{
+						Name:      provider.Name,
+						Issuer:    provider.Issuer,
+						Audiences: provider.Audiences,
+					}
+
+					if provider.LocalJWKS != nil {
+						secret, err := p.source.LookupSecret(types.NamespacedName{Namespace: proxy.Namespace, Name: provider.LocalJWKS.SecretName}, func(*v1.Secret) error { return nil })
+						if err != nil {
+							log.Println("ERROR LOOKING UP SECRET")
+							continue
+						} else {
+							pr.LocalJWKS = &LocalJWKS{
+								Secret: secret,
+							}
+						}
+					}
+
+					svhost.JWTVerificationPolicy.Providers = append(svhost.JWTVerificationPolicy.Providers, pr)
+				}
+
+				for _, rule := range jwtPolicy.Rules {
+					svhost.JWTVerificationPolicy.Rules = append(svhost.JWTVerificationPolicy.Rules, JWTRule{
+						Match:        JWTMatch{Prefix: rule.Match.Prefix},
+						ProviderName: rule.ProviderName,
+					})
 				}
 			}
 		}

@@ -3852,6 +3852,46 @@ spec:
                       to the fqdn.
                     pattern: ^(\*\.)?[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                     type: string
+                  jwtVerificationPolicy:
+                    description: The policy for verifying JSON Web Tokens (JWTs) on
+                      the virtual host.
+                    properties:
+                      providers:
+                        description: Providers specify how to verify JWTs.
+                        items:
+                          properties:
+                            audiences:
+                              items:
+                                type: string
+                              type: array
+                            issuer:
+                              type: string
+                            localJWKS:
+                              properties:
+                                secretName:
+                                  type: string
+                              type: object
+                            name:
+                              type: string
+                            remoteJWKS:
+                              type: object
+                          type: object
+                        type: array
+                      rules:
+                        description: Rules match requests to their JWT verification
+                          requirements.
+                        items:
+                          properties:
+                            match:
+                              properties:
+                                prefix:
+                                  type: string
+                              type: object
+                            providerName:
+                              type: string
+                          type: object
+                        type: array
+                    type: object
                   rateLimitPolicy:
                     description: The policy for rate limiting on the virtual host.
                     properties:
@@ -12172,7 +12212,7 @@ webhooks:
     rules:
       - operations: [ "CREATE" , "UPDATE" ]
         apiGroups: [ "gateway.networking.k8s.io" ]
-        apiVersions: [ "v1alpha2" ]
+        apiVersions: [ "v1alpha2", "v1beta1" ]
         resources: [ "gateways", "gatewayclasses", "httproutes" ]
     failurePolicy: Fail
     sideEffects: None

@@ -1863,6 +1863,200 @@ include invalid.</p>
 </tr>
 </tbody>
 </table>
+<h3 id="projectcontour.io/v1.JWTMatch">JWTMatch
+</h3>
+<p>
+(<em>Appears on:</em>
+<a href="#projectcontour.io/v1.JWTRule">JWTRule</a>)
+</p>
+<p>
+</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="white-space:nowrap">
+<code>prefix</code>
+<br>
+<em>
+string
+</em>
+</td>
+<td>
+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="projectcontour.io/v1.JWTProvider">JWTProvider
+</h3>
+<p>
+(<em>Appears on:</em>
+<a href="#projectcontour.io/v1.JWTVerificationPolicy">JWTVerificationPolicy</a>)
+</p>
+<p>
+</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="white-space:nowrap">
+<code>name</code>
+<br>
+<em>
+string
+</em>
+</td>
+<td>
+</td>
+</tr>
+<tr>
+<td style="white-space:nowrap">
+<code>issuer</code>
+<br>
+<em>
+string
+</em>
+</td>
+<td>
+</td>
+</tr>
+<tr>
+<td style="white-space:nowrap">
+<code>audiences</code>
+<br>
+<em>
+[]string
+</em>
+</td>
+<td>
+</td>
+</tr>
+<tr>
+<td style="white-space:nowrap">
+<code>remoteJWKS</code>
+<br>
+<em>
+<a href="#projectcontour.io/v1.RemoteJWKS">
+RemoteJWKS
+</a>
+</em>
+</td>
+<td>
+</td>
+</tr>
+<tr>
+<td style="white-space:nowrap">
+<code>localJWKS</code>
+<br>
+<em>
+<a href="#projectcontour.io/v1.LocalJWKS">
+LocalJWKS
+</a>
+</em>
+</td>
+<td>
+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="projectcontour.io/v1.JWTRule">JWTRule
+</h3>
+<p>
+(<em>Appears on:</em>
+<a href="#projectcontour.io/v1.JWTVerificationPolicy">JWTVerificationPolicy</a>)
+</p>
+<p>
+</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="white-space:nowrap">
+<code>match</code>
+<br>
+<em>
+<a href="#projectcontour.io/v1.JWTMatch">
+JWTMatch
+</a>
+</em>
+</td>
+<td>
+</td>
+</tr>
+<tr>
+<td style="white-space:nowrap">
+<code>providerName</code>
+<br>
+<em>
+string
+</em>
+</td>
+<td>
+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="projectcontour.io/v1.JWTVerificationPolicy">JWTVerificationPolicy
+</h3>
+<p>
+(<em>Appears on:</em>
+<a href="#projectcontour.io/v1.VirtualHost">VirtualHost</a>)
+</p>
+<p>
+</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="white-space:nowrap">
+<code>providers</code>
+<br>
+<em>
+<a href="#projectcontour.io/v1.JWTProvider">
+[]JWTProvider
+</a>
+</em>
+</td>
+<td>
+<p>Providers specify how to verify JWTs.</p>
+</td>
+</tr>
+<tr>
+<td style="white-space:nowrap">
+<code>rules</code>
+<br>
+<em>
+<a href="#projectcontour.io/v1.JWTRule">
+[]JWTRule
+</a>
+</em>
+</td>
+<td>
+<p>Rules match requests to their JWT verification requirements.</p>
+</td>
+</tr>
+</tbody>
+</table>
 <h3 id="projectcontour.io/v1.LoadBalancerPolicy">LoadBalancerPolicy
 </h3>
 <p>
@@ -1915,6 +2109,35 @@ is used.</p>
 supplied list of hash policies is invalid, it will be ignored. If the
 list of hash policies is empty after validation, the load balancing
 strategy will fall back the the default <code>RoundRobin</code>.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="projectcontour.io/v1.LocalJWKS">LocalJWKS
+</h3>
+<p>
+(<em>Appears on:</em>
+<a href="#projectcontour.io/v1.JWTProvider">JWTProvider</a>)
+</p>
+<p>
+</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="white-space:nowrap">
+<code>secretName</code>
+<br>
+<em>
+string
+</em>
+</td>
+<td>
 </td>
 </tr>
 </tbody>
@@ -2314,6 +2537,14 @@ service (RLS) for a rate limit decision on each request.</p>
 <p>RemoteAddressDescriptor defines a descriptor entry with a key of
 &ldquo;remote_address&rdquo; and a value equal to the client&rsquo;s IP address
 (from x-forwarded-for).</p>
+</p>
+<h3 id="projectcontour.io/v1.RemoteJWKS">RemoteJWKS
+</h3>
+<p>
+(<em>Appears on:</em>
+<a href="#projectcontour.io/v1.JWTProvider">JWTProvider</a>)
+</p>
+<p>
 </p>
 <h3 id="projectcontour.io/v1.ReplacePrefix">ReplacePrefix
 </h3>
@@ -3762,6 +3993,21 @@ RateLimitPolicy
 <td>
 <em>(Optional)</em>
 <p>The policy for rate limiting on the virtual host.</p>
+</td>
+</tr>
+<tr>
+<td style="white-space:nowrap">
+<code>jwtVerificationPolicy</code>
+<br>
+<em>
+<a href="#projectcontour.io/v1.JWTVerificationPolicy">
+JWTVerificationPolicy
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>The policy for verifying JSON Web Tokens (JWTs) on the virtual host.</p>
 </td>
 </tr>
 </tbody>

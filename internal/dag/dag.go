@@ -611,6 +611,41 @@ type SecureVirtualHost struct {
 	// AuthorizationServerWithRequestBody specifies configuration
 	// for buffering request data sent to AuthorizationServer
 	AuthorizationServerWithRequestBody *AuthorizationServerBufferSettings
+
+	JWTVerificationPolicy *JWTVerificationPolicy
+}
+
+type JWTVerificationPolicy struct {
+	// Providers specify how to verify JWTs.
+	Providers []JWTProvider
+
+	// Rules match requests to their JWT verification requirements.
+	Rules []JWTRule
+}
+
+type JWTProvider struct {
+	Name       string
+	Issuer     string
+	Audiences  []string
+	RemoteJWKS *RemoteJWKS
+	LocalJWKS  *LocalJWKS
+}
+
+type RemoteJWKS struct {
+	// TODO
+}
+
+type LocalJWKS struct {
+	Secret *Secret
+}
+
+type JWTRule struct {
+	Match        JWTMatch
+	ProviderName string
+}
+
+type JWTMatch struct {
+	Prefix string
 }
 
 // AuthorizationServerBufferSettings enables ExtAuthz filter to buffer client
