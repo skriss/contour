@@ -269,7 +269,11 @@ type JWTProvider struct {
 }
 
 type RemoteJWKS struct {
-	// TODO
+	HTTPURI HTTPURI `json:"httpURI,omitempty"`
+}
+
+type HTTPURI struct {
+	URI string `json:"uri,omitempty"`
 }
 
 type LocalJWKS struct {
