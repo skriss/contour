@@ -149,15 +149,6 @@ This provides related but separate functionality to the JWT authentication filte
 This [excellent blog post](https://www.jpmorgan.com/technology/technology-blog/protecting-web-applications-via-envoy-oauth2-filter) shows an example of how to use the OAuth2 and JWT filters together in Envoy.
 Contour [may pursue adding support for the OAuth2 filter](https://github.com/projectcontour/contour/issues/2664), but it will be designed and implemented separately.
 
-## Security Considerations
-If this proposal has an impact to the security of the product, its users, or data stored or transmitted via the product, they must be addressed here.
-
 ## Compatibility
 JWT verification will be an optional feature that is disabled by default.
 Existing users should not be affected by its addition.
-
-## Implementation
-A description of the implementation, timelines, and any resources that have agreed to contribute.
-
-## Open Issues
-A discussion of issues relating to this proposal for which the author does not know the solution. This section may be omitted if there are none.
