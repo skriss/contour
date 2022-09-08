@@ -29,9 +29,10 @@ This document proposes a design for adding that support to Contour's custom reso
 Contour's `HTTPProxy` resource will get a new optional field, `spec.virtualhost.jwtProviders`, to define the details of how to verify JWTs for requests to a given virtual host.
 This field will only be supported for virtual hosts for which Envoy is terminating TLS.
 The structure of this field will be similar to the [Envoy filter's providers field](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/jwt_authn/v3/config.proto#envoy-v3-api-msg-extensions-filters-http-jwt-authn-v3-jwtauthentication), with some simplifications. 
-Specifically, a provider will define one or more sets of issuers, audiences, and JSON Web Key Sets (JWKS) that can be used to verify a JWT (see [the Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/jwt_authn/v3/config.proto#envoy-v3-api-msg-extensions-filters-http-jwt-authn-v3-jwtprovider) for more information).
+Specifically, a provider will define an issuer, 0+ audiences, and a JSON Web Key Set (JWKS) that can be used to verify a JWT (see [the Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/jwt_authn/v3/config.proto#envoy-v3-api-msg-extensions-filters-http-jwt-authn-v3-jwtprovider) for more information).
+Any number of providers can be defined for a virtual host, to allow different routes to be verified differently.
 
-`HTTPProxy` routes will also get a new optional field, `spec.routes.jwtProvider`, to name a provider defined in the above field that should be used to verify JWTs on requests handled by the route.
+`HTTPProxy` routes will also get a new optional field, `spec.routes.jwtProvider`, to name a provider defined in the virtual host that should be used to verify JWTs on requests handled by the route.
 If this field is absent, JWTs will not be verified for requests handled by the route.
 
 Contour will validate the contents of `spec.virtualhost.jwtProviders` and `spec.routes.jwtProvider` if present, and will configure the JWT authentication filter on the HTTP Connection Manager for the relevant virtual host.
