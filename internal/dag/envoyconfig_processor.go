@@ -32,7 +32,7 @@ func (p *EnvoyConfigProcessor) Run(dag *DAG, cache *KubernetesCache) {
 	}
 
 	// Listeners
-	listenersYAML, ok := cache.configmap.Data["listeners"]
+	listenersYAML, ok := cache.configmap.Data["listeners.yaml"]
 	if !ok || len(listenersYAML) == 0 {
 		p.Info("no listeners config found")
 		return
@@ -124,7 +124,7 @@ func (p *EnvoyConfigProcessor) Run(dag *DAG, cache *KubernetesCache) {
 	p.Infof("Listeners: %d", len(dag.DynamicListeners))
 
 	// Clusters
-	clustersYAML, ok := cache.configmap.Data["clusters"]
+	clustersYAML, ok := cache.configmap.Data["clusters.yaml"]
 	if !ok || len(clustersYAML) == 0 {
 		p.Info("no clusters config found")
 		return
@@ -184,7 +184,7 @@ func (p *EnvoyConfigProcessor) Run(dag *DAG, cache *KubernetesCache) {
 	p.Infof("Clusters: %d", len(dag.DynamicClusters))
 
 	// RouteConfigs
-	routeConfigsYAML, ok := cache.configmap.Data["routeconfigs"]
+	routeConfigsYAML, ok := cache.configmap.Data["routeconfigs.yaml"]
 	if !ok || len(routeConfigsYAML) == 0 {
 		p.Info("no routeconfigs config found")
 		return
