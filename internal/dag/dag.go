@@ -23,6 +23,10 @@ import (
 	"strings"
 	"time"
 
+	envoy_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoy_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoy_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoy_tls_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/projectcontour/contour/internal/status"
 	"github.com/projectcontour/contour/internal/timeout"
 	v1 "k8s.io/api/core/v1"
@@ -56,6 +60,11 @@ func ComposeObservers(observers ...Observer) Observer {
 }
 
 type DAG struct {
+	DynamicListeners    []*envoy_listener_v3.Listener
+	DynamicClusters     []*envoy_cluster_v3.Cluster
+	DynamicRouteConfigs []*envoy_route_v3.RouteConfiguration
+	DynamicSecrets      []*envoy_tls_v3.Secret
+
 	// StatusCache holds a cache of status updates to send.
 	StatusCache status.Cache
 

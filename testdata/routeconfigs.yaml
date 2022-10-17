@@ -1,0 +1,42 @@
+name: http_routes
+virtual_hosts:
+- name: default
+  domains:
+  - "*"
+  routes:
+  - match:
+      prefix: /redirect
+    redirect:
+      https_redirect: true
+      path_redirect: /
+  - match:
+      prefix: /418
+    direct_response:
+      status: 418
+      body:
+        inline_string: "I'm a teapot!!!\n"
+  - match:
+      prefix: /traffic-split
+    route:
+      weighted_clusters:
+        clusters:
+        - name: echo.default.80
+          weight: 50
+        - name: echo-2.default.80
+          weight: 50
+  - match:
+      prefix: /
+    request_headers_to_add:
+    - header:
+        key: X-Steve
+        value: Kriss
+    route:
+      cluster: echo.default.80 # this cluster is automatically created from the service
+- name: httpbin
+  domains:
+  - "httpbin.org"
+  routes:
+  - match:
+      prefix: /
+    route:
+      cluster: httpbin.org # this cluster is user-configured

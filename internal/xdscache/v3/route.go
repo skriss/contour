@@ -87,6 +87,7 @@ func (c *RouteCache) Query(names []string) []proto.Message {
 func (*RouteCache) TypeURL() string { return resource.RouteType }
 
 func (c *RouteCache) OnChange(root *dag.DAG) {
+
 	// RouteConfigs keyed by RouteConfig name:
 	// 	- one for all the HTTP vhost routes -- "ingress_http"
 	//	- one per svhost -- "https/<vhost fqdn>"
@@ -128,6 +129,10 @@ func (c *RouteCache) OnChange(root *dag.DAG) {
 
 	for _, routeConfig := range routeConfigs {
 		sort.Stable(sorter.For(routeConfig.VirtualHosts))
+	}
+
+	for _, routeConfig := range root.DynamicRouteConfigs {
+		routeConfigs[routeConfig.Name] = routeConfig
 	}
 
 	c.Update(routeConfigs)

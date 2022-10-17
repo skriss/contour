@@ -71,6 +71,8 @@ type KubernetesCache struct {
 	referencegrants           map[types.NamespacedName]*gatewayapi_v1alpha2.ReferenceGrant
 	extensions                map[types.NamespacedName]*contour_api_v1alpha1.ExtensionService
 
+	configmap *v1.ConfigMap
+
 	Client client.Reader
 
 	initialize sync.Once
@@ -102,6 +104,12 @@ func (kc *KubernetesCache) Insert(obj interface{}) bool {
 
 	maybeInsert := func(obj interface{}) bool {
 		switch obj := obj.(type) {
+		case *v1.ConfigMap:
+			if obj.Namespace == "projectcontour" && obj.Name == "envoyconfig" {
+				kc.configmap = obj
+				return true
+			}
+			return false
 		case *v1.Secret:
 			valid, err := isValidSecret(obj)
 			if !valid {
@@ -266,6 +274,12 @@ func (kc *KubernetesCache) Remove(obj interface{}) bool {
 
 func (kc *KubernetesCache) remove(obj interface{}) bool {
 	switch obj := obj.(type) {
+	case *v1.ConfigMap:
+		if obj.Namespace == "projectcontour" && obj.Name == "envoyconfig" {
+			kc.configmap = nil
+			return true
+		}
+		return false
 	case *v1.Secret:
 		m := k8s.NamespacedNameOf(obj)
 		_, ok := kc.secrets[m]

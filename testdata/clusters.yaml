@@ -1,0 +1,28 @@
+name: httpbin.org
+type: STRICT_DNS
+lb_policy: ROUND_ROBIN
+load_assignment:
+  cluster_name: httpbin.org
+  endpoints:
+  - lb_endpoints:
+    - endpoint:
+        address:
+          socket_address:
+            address: httpbin.org
+            port_value: 80
+---
+# this cluster adds a custom setting to what
+# would otherwise be a stock cluster.
+name: echo.default.80_connect_timeout
+type: STRICT_DNS
+lb_policy: ROUND_ROBIN
+connect_timeout: 7s
+load_assignment:
+  cluster_name: echo.default.80_connect_timeout
+  endpoints:
+  - lb_endpoints:
+    - endpoint:
+        address:
+          socket_address:
+            address: echo.default
+            port_value: 80            

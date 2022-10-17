@@ -104,5 +104,9 @@ func (c *SecretCache) OnChange(root *dag.DAG) {
 		}
 	}
 
+	for _, secret := range root.DynamicSecrets {
+		secrets[secret.Name] = secret
+	}
+
 	c.Update(secrets)
 }

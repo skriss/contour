@@ -99,5 +99,9 @@ func (c *ClusterCache) OnChange(root *dag.DAG) {
 		}
 	}
 
+	for _, cluster := range root.DynamicClusters {
+		clusters[cluster.Name] = cluster
+	}
+
 	c.Update(clusters)
 }

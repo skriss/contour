@@ -1,0 +1,6 @@
+- Get EDS functioning -- create a ClusterLoadAssignment for each Kubernetes service that can be referenced by stock or custom clusters (e.g. echo.default.80)
+- Config versioning would be very cool
+  - on updates:
+    - create a versioned copy
+    - attempt to send it to Envoy
+    - if it doesn't work, roll it back

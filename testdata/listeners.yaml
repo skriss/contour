@@ -1,0 +1,70 @@
+name: http
+address:
+  socket_address:
+    address: 0.0.0.0
+    port_value: 8080
+filter_chains:
+- filters:
+  - name: envoy.filters.network.http_connection_manager
+    typed_config:
+      "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+      stat_prefix: http_hcm
+      http_filters:
+      # - name: envoy.filters.http.local_ratelimit
+      #   typed_config:
+      #     "@type": type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+      #     stat_prefix: http_local_rate_limiter
+      #     filter_enabled:
+      #       default_value:
+      #         numerator: 100
+      #         denominator: HUNDRED
+      #     filter_enforced:
+      #       default_value:
+      #         numerator: 100
+      #         denominator: HUNDRED
+      #     token_bucket:
+      #       max_tokens: 3
+      #       tokens_per_fill: 1
+      #       fill_interval: 60s
+      - name: envoy.filters.http.router
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+      rds:
+        # config_source is automatically filled in
+        route_config_name: http_routes
+---
+name: https
+address:
+  socket_address:
+    address: 0.0.0.0
+    port_value: 8443
+listener_filters:
+  # tls_inspector is needed in order to access SNI in the filter chain matches
+  - name: "envoy.filters.listener.tls_inspector"
+    typed_config:
+      "@type": type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
+filter_chains:
+  # envoy.stevekriss.com filter chain
+  - filter_chain_match:
+      server_names:
+        - envoy.stevekriss.com
+    transport_socket:
+      name: envoy.transport_sockets.tls
+      typed_config:
+        "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+        common_tls_context:
+          tls_certificate_sds_secret_configs:
+              # config_source is automatically filled in
+            - name: envoy-stevekriss-com-cert.default
+    filters:
+      - name: envoy.filters.network.http_connection_manager
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          stat_prefix: https_envoy.stevekriss.com
+          http_filters:
+          - name: envoy.filters.http.router
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          rds:
+            # config_source is automatically filled in
+            route_config_name: http_routes

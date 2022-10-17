@@ -542,6 +542,10 @@ func (c *ListenerCache) OnChange(root *dag.DAG) {
 		}
 	}
 
+	for _, listener := range root.DynamicListeners {
+		listeners[listener.Name] = listener
+	}
+
 	c.Update(listeners)
 }
 

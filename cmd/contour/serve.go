@@ -461,6 +461,7 @@ func (s *Server) doServe() error {
 		"contourconfigurations":     &contour_api_v1alpha1.ContourConfiguration{},
 		"services":                  &corev1.Service{},
 		"ingresses":                 &networking_v1.Ingress{},
+		"configmaps":                &corev1.ConfigMap{},
 	} {
 		if err := informOnResource(r, eventHandler, s.mgr.GetCache()); err != nil {
 			s.log.WithError(err).WithField("resource", name).Fatal("failed to create informer")
@@ -926,6 +927,10 @@ func (s *Server) getDAGBuilder(dbc dagBuilderConfig) *dag.Builder {
 	// The listener processor has to go last since it looks at
 	// the output of the other processors.
 	dagProcessors = append(dagProcessors, &dag.ListenerProcessor{})
+
+	dagProcessors = append(dagProcessors, &dag.EnvoyConfigProcessor{
+		FieldLogger: s.log.WithField("context", "EnvoyConfigProcessor"),
+	})
 
 	var configuredSecretRefs []*types.NamespacedName
 	if dbc.fallbackCert != nil {
