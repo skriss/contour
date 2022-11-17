@@ -38,13 +38,11 @@ spec:
                 - /bin/contour
                 - envoy
                 - shutdown
-        livenessProbe:
-          httpGet:
-            path: /healthz
-            port: 8090
-          initialDelaySeconds: 3
-          periodSeconds: 10
         name: shutdown-manager
+        resources:
+          requests:
+            cpu: "25m"
+            memory: "50Mi"
         volumeMounts:
           - name: envoy-admin
             mountPath: /admin
@@ -85,6 +83,17 @@ spec:
             port: 8002
           initialDelaySeconds: 3
           periodSeconds: 4
+        livenessProbe:
+          httpGet:
+            path: /ready
+            port: 8002
+          initialDelaySeconds: 15
+          periodSeconds: 5
+          failureThreshold: 6
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "256Mi"
         volumeMounts:
           - name: envoy-config
             mountPath: /config
