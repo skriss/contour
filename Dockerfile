@@ -36,5 +36,6 @@ RUN --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/g
 # Ensure we produced a static binary.
 RUN ldd contour 2>&1 | grep 'not a dynamic executable'
 
-FROM scratch AS final
+FROM docker.io/envoyproxy/envoy:v1.24.0 AS final
+RUN mkdir -p /admin && chmod 0777 /admin
 COPY --from=build /contour/contour /bin/contour

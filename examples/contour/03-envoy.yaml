@@ -24,30 +24,6 @@ spec:
         app: envoy
     spec:
       containers:
-      - command:
-        - /bin/contour
-        args:
-          - envoy
-          - shutdown-manager
-        image: ghcr.io/projectcontour/contour:main
-        imagePullPolicy: Always
-        lifecycle:
-          preStop:
-            exec:
-              command:
-                - /bin/contour
-                - envoy
-                - shutdown
-        livenessProbe:
-          httpGet:
-            path: /healthz
-            port: 8090
-          initialDelaySeconds: 3
-          periodSeconds: 10
-        name: shutdown-manager
-        volumeMounts:
-          - name: envoy-admin
-            mountPath: /admin
       - args:
         - -c
         - /config/envoy.json
@@ -92,14 +68,14 @@ spec:
           - name: envoycert
             mountPath: /certs
             readOnly: true
-          - name: envoy-admin
-            mountPath: /admin
         lifecycle:
           preStop:
-            httpGet:
-              path: /shutdown
-              port: 8090
-              scheme: HTTP
+            exec:
+              command:
+                - /bin/contour
+                - envoy
+                - shutdown
+                - --check-delay=60s
       initContainers:
       - args:
         - bootstrap
@@ -131,8 +107,6 @@ spec:
       serviceAccountName: envoy
       terminationGracePeriodSeconds: 300
       volumes:
-        - name: envoy-admin
-          emptyDir: {}
         - name: envoy-config
           emptyDir: {}
         - name: envoycert
