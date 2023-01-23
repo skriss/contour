@@ -4737,6 +4737,36 @@ spec:
                                 type: object
                               minItems: 1
                               type: array
+                            rateLimitService:
+                              properties:
+                                domain:
+                                  description: Domain is passed to the Rate Limit
+                                    Service.
+                                  type: string
+                                enableResourceExhaustedCode:
+                                  description: EnableResourceExhaustedCode enables
+                                    translating error code 429 to grpc code RESOURCE_EXHAUSTED.
+                                    When disabled it's translated to UNAVAILABLE
+                                  type: boolean
+                                enableXRateLimitHeaders:
+                                  description: "EnableXRateLimitHeaders defines whether
+                                    to include the X-RateLimit headers X-RateLimit-Limit,
+                                    X-RateLimit-Remaining, and X-RateLimit-Reset (as
+                                    defined by the IETF Internet-Draft linked below),
+                                    on responses to clients when the Rate Limit Service
+                                    is consulted for a request. \n ref. https://tools.ietf.org/id/draft-polli-ratelimit-headers-03.html"
+                                  type: boolean
+                                extensionService:
+                                  description: ExtensionService identifies the extension
+                                    service defining the RLS, formatted as <namespace>/<name>.
+                                  type: string
+                                failOpen:
+                                  description: FailOpen defines whether to allow requests
+                                    to proceed when the Rate Limit Service fails to
+                                    respond with a valid rate limit decision within
+                                    the timeout defined on the extension service.
+                                  type: boolean
+                              type: object
                           type: object
                         local:
                           description: Local defines local rate limiting parameters,
@@ -6002,6 +6032,35 @@ spec:
                               type: object
                             minItems: 1
                             type: array
+                          rateLimitService:
+                            properties:
+                              domain:
+                                description: Domain is passed to the Rate Limit Service.
+                                type: string
+                              enableResourceExhaustedCode:
+                                description: EnableResourceExhaustedCode enables translating
+                                  error code 429 to grpc code RESOURCE_EXHAUSTED.
+                                  When disabled it's translated to UNAVAILABLE
+                                type: boolean
+                              enableXRateLimitHeaders:
+                                description: "EnableXRateLimitHeaders defines whether
+                                  to include the X-RateLimit headers X-RateLimit-Limit,
+                                  X-RateLimit-Remaining, and X-RateLimit-Reset (as
+                                  defined by the IETF Internet-Draft linked below),
+                                  on responses to clients when the Rate Limit Service
+                                  is consulted for a request. \n ref. https://tools.ietf.org/id/draft-polli-ratelimit-headers-03.html"
+                                type: boolean
+                              extensionService:
+                                description: ExtensionService identifies the extension
+                                  service defining the RLS, formatted as <namespace>/<name>.
+                                type: string
+                              failOpen:
+                                description: FailOpen defines whether to allow requests
+                                  to proceed when the Rate Limit Service fails to
+                                  respond with a valid rate limit decision within
+                                  the timeout defined on the extension service.
+                                type: boolean
+                            type: object
                         type: object
                       local:
                         description: Local defines local rate limiting parameters,

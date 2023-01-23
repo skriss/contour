@@ -448,7 +448,18 @@ type RequestHashPolicy struct {
 
 // GlobalRateLimitPolicy holds global rate limiting parameters.
 type GlobalRateLimitPolicy struct {
-	Descriptors []*RateLimitDescriptor
+	RateLimitService *RateLimitService
+	Descriptors      []*RateLimitDescriptor
+}
+
+type RateLimitService struct {
+	ExtensionService            types.NamespacedName
+	SNI                         string
+	Domain                      string
+	Timeout                     timeout.Setting
+	FailOpen                    bool
+	EnableXRateLimitHeaders     bool
+	EnableResourceExhaustedCode bool
 }
 
 // RateLimitDescriptor is a list of rate limit descriptor entries.

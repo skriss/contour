@@ -20,10 +20,14 @@ import (
 	"strings"
 	"time"
 
+	xds_core_v3 "github.com/cncf/xds/go/xds/core/v3"
+	xds_matcher_v3 "github.com/cncf/xds/go/xds/type/matcher/v3"
 	accesslog "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 	envoy_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoy_matching_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/common/matching/v3"
 	envoy_gzip_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/compression/gzip/compressor/v3"
+	envoy_matcher_action_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/common/matcher/action/v3"
 	envoy_compressor_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/compressor/v3"
 	envoy_cors_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/cors/v3"
 	envoy_config_filter_http_ext_authz_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
@@ -39,6 +43,7 @@ import (
 	http "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	tcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
 	envoy_tls_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
+	envoy_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/projectcontour/contour/internal/dag"
@@ -385,6 +390,69 @@ func (b *httpConnectionManagerBuilder) AddFilter(f *http.HttpFilter) *httpConnec
 	}
 
 	return b
+}
+
+func (b *httpConnectionManagerBuilder) AddFilterForAuthority(authority string, f *http.HttpFilter) *httpConnectionManagerBuilder {
+	if f == nil {
+		return b
+	}
+
+	return b.AddFilter(&http.HttpFilter{
+		Name: "matched-filter",
+		ConfigType: &http.HttpFilter_TypedConfig{
+			TypedConfig: protobuf.MustMarshalAny(&envoy_matching_v3.ExtensionWithMatcher{
+				XdsMatcher: &xds_matcher_v3.Matcher{
+					MatcherType: &xds_matcher_v3.Matcher_MatcherList_{
+						MatcherList: &xds_matcher_v3.Matcher_MatcherList{
+							Matchers: []*xds_matcher_v3.Matcher_MatcherList_FieldMatcher{
+								{
+									// This whole predicate says "match requests whose :authority header does
+									// not equal <authority>"."
+									Predicate: &xds_matcher_v3.Matcher_MatcherList_Predicate{
+										MatchType: &xds_matcher_v3.Matcher_MatcherList_Predicate_NotMatcher{
+											NotMatcher: &xds_matcher_v3.Matcher_MatcherList_Predicate{
+												MatchType: &xds_matcher_v3.Matcher_MatcherList_Predicate_SinglePredicate_{
+													SinglePredicate: &xds_matcher_v3.Matcher_MatcherList_Predicate_SinglePredicate{
+														Input: &xds_core_v3.TypedExtensionConfig{
+															Name: "authority",
+															TypedConfig: protobuf.MustMarshalAny(&envoy_matcher_v3.HttpRequestHeaderMatchInput{
+																HeaderName: ":authority",
+															}),
+														},
+														Matcher: &xds_matcher_v3.Matcher_MatcherList_Predicate_SinglePredicate_ValueMatch{
+															ValueMatch: &xds_matcher_v3.StringMatcher{
+																MatchPattern: &xds_matcher_v3.StringMatcher_Exact{
+																	Exact: authority,
+																},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+									// On a match, meaning a request whose :authority header does not equal
+									// <authority>, skip this filter.
+									OnMatch: &xds_matcher_v3.Matcher_OnMatch{
+										OnMatch: &xds_matcher_v3.Matcher_OnMatch_Action{
+											Action: &xds_core_v3.TypedExtensionConfig{
+												Name:        "skip",
+												TypedConfig: protobuf.MustMarshalAny(&envoy_matcher_action_v3.SkipFilter{}),
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				ExtensionConfig: &envoy_core_v3.TypedExtensionConfig{
+					Name:        f.Name,
+					TypedConfig: f.GetTypedConfig(),
+				},
+			}),
+		},
+	})
 }
 
 // Validate runs builtin validation rules against the current builder state.

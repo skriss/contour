@@ -666,12 +666,40 @@ type LocalRateLimitPolicy struct {
 
 // GlobalRateLimitPolicy defines global rate limiting parameters.
 type GlobalRateLimitPolicy struct {
+	RateLimitService *RateLimitService `json:"rateLimitService,omitempty"`
+
 	// Descriptors defines the list of descriptors that will
 	// be generated and sent to the rate limit service. Each
 	// descriptor contains 1+ key-value pair entries.
 	// +required
 	// +kubebuilder:validation:MinItems=1
 	Descriptors []RateLimitDescriptor `json:"descriptors,omitempty"`
+}
+
+type RateLimitService struct {
+	// ExtensionService identifies the extension service defining the RLS,
+	// formatted as <namespace>/<name>.
+	ExtensionService string `json:"extensionService,omitempty"`
+
+	// Domain is passed to the Rate Limit Service.
+	Domain string `json:"domain,omitempty"`
+
+	// FailOpen defines whether to allow requests to proceed when the
+	// Rate Limit Service fails to respond with a valid rate limit
+	// decision within the timeout defined on the extension service.
+	FailOpen bool `json:"failOpen,omitempty"`
+
+	// EnableXRateLimitHeaders defines whether to include the X-RateLimit
+	// headers X-RateLimit-Limit, X-RateLimit-Remaining, and X-RateLimit-Reset
+	// (as defined by the IETF Internet-Draft linked below), on responses
+	// to clients when the Rate Limit Service is consulted for a request.
+	//
+	// ref. https://tools.ietf.org/id/draft-polli-ratelimit-headers-03.html
+	EnableXRateLimitHeaders bool `json:"enableXRateLimitHeaders,omitempty"`
+
+	// EnableResourceExhaustedCode enables translating error code 429 to
+	// grpc code RESOURCE_EXHAUSTED. When disabled it's translated to UNAVAILABLE
+	EnableResourceExhaustedCode bool `json:"enableResourceExhaustedCode,omitempty"`
 }
 
 // RateLimitDescriptor defines a list of key-value pair generators.

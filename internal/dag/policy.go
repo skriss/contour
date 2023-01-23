@@ -26,6 +26,7 @@ import (
 
 	contour_api_v1 "github.com/projectcontour/contour/apis/projectcontour/v1"
 	"github.com/projectcontour/contour/internal/annotation"
+	"github.com/projectcontour/contour/internal/k8s"
 	"github.com/projectcontour/contour/internal/ref"
 	"github.com/projectcontour/contour/internal/timeout"
 	"github.com/sirupsen/logrus"
@@ -593,6 +594,18 @@ func globalRateLimitPolicy(in *contour_api_v1.GlobalRateLimitPolicy) (*GlobalRat
 	}
 
 	res := &GlobalRateLimitPolicy{}
+
+	if inRLS := in.RateLimitService; inRLS != nil {
+		res.RateLimitService = &RateLimitService{
+			ExtensionService:            k8s.NamespacedNameFrom(inRLS.ExtensionService),
+			Domain:                      inRLS.Domain,
+			FailOpen:                    inRLS.FailOpen,
+			EnableXRateLimitHeaders:     inRLS.EnableXRateLimitHeaders,
+			EnableResourceExhaustedCode: inRLS.EnableResourceExhaustedCode,
+			// TODO SNI
+			// TODO Timeout
+		}
+	}
 
 	for _, d := range in.Descriptors {
 		var rld RateLimitDescriptor

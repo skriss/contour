@@ -10,3 +10,16 @@ spec:
       port: 8081
   timeoutPolicy:
     response: 100ms
+---
+apiVersion: projectcontour.io/v1alpha1
+kind: ExtensionService
+metadata:
+  namespace: projectcontour
+  name: ratelimit-2
+spec:
+  protocol: h2c
+  services:
+    - name: ratelimit
+      port: 8081
+  timeoutPolicy:
+    response: 100ms

@@ -375,7 +375,7 @@ func (c *ListenerCache) OnChange(root *dag.DAG) {
 		if len(listener.VirtualHosts) > 0 {
 			if httpListener, ok := cfg.HTTPListeners[listener.Name]; ok {
 				// Add a listener if there are vhosts bound to http.
-				cm := envoy_v3.HTTPConnectionManagerBuilder().
+				hcmBuilder := envoy_v3.HTTPConnectionManagerBuilder().
 					Codec(envoy_v3.CodecForVersions(cfg.DefaultHTTPVersions...)).
 					DefaultFilters().
 					RouteConfigName(httpListener.Name).
@@ -389,16 +389,22 @@ func (c *ListenerCache) OnChange(root *dag.DAG) {
 					ConnectionShutdownGracePeriod(cfg.Timeouts.ConnectionShutdownGracePeriod).
 					AllowChunkedLength(cfg.AllowChunkedLength).
 					MergeSlashes(cfg.MergeSlashes).
-					NumTrustedHops(cfg.XffNumTrustedHops).
-					AddFilter(envoy_v3.GlobalRateLimitFilter(envoyGlobalRateLimitConfig(cfg.RateLimitConfig))).
-					Get()
+					NumTrustedHops(cfg.XffNumTrustedHops)
+					// AddFilter(envoy_v3.GlobalRateLimitFilter(envoyGlobalRateLimitConfig(cfg.RateLimitConfig))).
+					// Get()
+
+				for _, vhost := range listener.VirtualHosts {
+					if vhost.RateLimitPolicy != nil && vhost.RateLimitPolicy.Global != nil && vhost.RateLimitPolicy.Global.RateLimitService != nil {
+						hcmBuilder.AddFilterForAuthority(vhost.Name, envoy_v3.GlobalRateLimitFilter(envoyGlobalRateLimitConfigDAG(vhost.RateLimitPolicy.Global.RateLimitService)))
+					}
+				}
 
 				listeners[httpListener.Name] = envoy_v3.Listener(
 					httpListener.Name,
 					httpListener.Address,
 					httpListener.Port,
 					proxyProtocol(cfg.UseProxyProto),
-					cm,
+					hcmBuilder.Get(),
 				)
 			}
 		}
@@ -554,6 +560,22 @@ func (c *ListenerCache) OnChange(root *dag.DAG) {
 }
 
 func envoyGlobalRateLimitConfig(config *RateLimitConfig) *envoy_v3.GlobalRateLimitConfig {
+	if config == nil {
+		return nil
+	}
+
+	return &envoy_v3.GlobalRateLimitConfig{
+		ExtensionService:            config.ExtensionService,
+		SNI:                         config.SNI,
+		FailOpen:                    config.FailOpen,
+		Timeout:                     config.Timeout,
+		Domain:                      config.Domain,
+		EnableXRateLimitHeaders:     config.EnableXRateLimitHeaders,
+		EnableResourceExhaustedCode: config.EnableResourceExhaustedCode,
+	}
+}
+
+func envoyGlobalRateLimitConfigDAG(config *dag.RateLimitService) *envoy_v3.GlobalRateLimitConfig {
 	if config == nil {
 		return nil
 	}
