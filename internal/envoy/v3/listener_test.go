@@ -275,7 +275,7 @@ func TestDownstreamTLSContext(t *testing.T) {
 			ResourceApiVersion: envoy_config_core_v3.ApiVersion_V3,
 			ConfigSourceSpecifier: &envoy_config_core_v3.ConfigSource_ApiConfigSource{
 				ApiConfigSource: &envoy_config_core_v3.ApiConfigSource{
-					ApiType:             envoy_config_core_v3.ApiConfigSource_GRPC,
+					ApiType:             envoy_config_core_v3.ApiConfigSource_DELTA_GRPC,
 					TransportApiVersion: envoy_config_core_v3.ApiVersion_V3,
 					GrpcServices: []*envoy_config_core_v3.GrpcService{{
 						TargetSpecifier: &envoy_config_core_v3.GrpcService_EnvoyGrpc_{
@@ -681,7 +681,7 @@ func TestHTTPConnectionManager(t *testing.T) {
 									ResourceApiVersion: envoy_config_core_v3.ApiVersion_V3,
 									ConfigSourceSpecifier: &envoy_config_core_v3.ConfigSource_ApiConfigSource{
 										ApiConfigSource: &envoy_config_core_v3.ApiConfigSource{
-											ApiType:             envoy_config_core_v3.ApiConfigSource_GRPC,
+											ApiType:             envoy_config_core_v3.ApiConfigSource_DELTA_GRPC,
 											TransportApiVersion: envoy_config_core_v3.ApiVersion_V3,
 											GrpcServices: []*envoy_config_core_v3.GrpcService{{
 												TargetSpecifier: &envoy_config_core_v3.GrpcService_EnvoyGrpc_{
@@ -728,7 +728,7 @@ func TestHTTPConnectionManager(t *testing.T) {
 									ResourceApiVersion: envoy_config_core_v3.ApiVersion_V3,
 									ConfigSourceSpecifier: &envoy_config_core_v3.ConfigSource_ApiConfigSource{
 										ApiConfigSource: &envoy_config_core_v3.ApiConfigSource{
-											ApiType:             envoy_config_core_v3.ApiConfigSource_GRPC,
+											ApiType:             envoy_config_core_v3.ApiConfigSource_DELTA_GRPC,
 											TransportApiVersion: envoy_config_core_v3.ApiVersion_V3,
 											GrpcServices: []*envoy_config_core_v3.GrpcService{{
 												TargetSpecifier: &envoy_config_core_v3.GrpcService_EnvoyGrpc_{
@@ -776,7 +776,7 @@ func TestHTTPConnectionManager(t *testing.T) {
 									ResourceApiVersion: envoy_config_core_v3.ApiVersion_V3,
 									ConfigSourceSpecifier: &envoy_config_core_v3.ConfigSource_ApiConfigSource{
 										ApiConfigSource: &envoy_config_core_v3.ApiConfigSource{
-											ApiType:             envoy_config_core_v3.ApiConfigSource_GRPC,
+											ApiType:             envoy_config_core_v3.ApiConfigSource_DELTA_GRPC,
 											TransportApiVersion: envoy_config_core_v3.ApiVersion_V3,
 											GrpcServices: []*envoy_config_core_v3.GrpcService{{
 												TargetSpecifier: &envoy_config_core_v3.GrpcService_EnvoyGrpc_{
@@ -825,7 +825,7 @@ func TestHTTPConnectionManager(t *testing.T) {
 									ResourceApiVersion: envoy_config_core_v3.ApiVersion_V3,
 									ConfigSourceSpecifier: &envoy_config_core_v3.ConfigSource_ApiConfigSource{
 										ApiConfigSource: &envoy_config_core_v3.ApiConfigSource{
-											ApiType:             envoy_config_core_v3.ApiConfigSource_GRPC,
+											ApiType:             envoy_config_core_v3.ApiConfigSource_DELTA_GRPC,
 											TransportApiVersion: envoy_config_core_v3.ApiVersion_V3,
 											GrpcServices: []*envoy_config_core_v3.GrpcService{{
 												TargetSpecifier: &envoy_config_core_v3.GrpcService_EnvoyGrpc_{
@@ -873,7 +873,7 @@ func TestHTTPConnectionManager(t *testing.T) {
 									ResourceApiVersion: envoy_config_core_v3.ApiVersion_V3,
 									ConfigSourceSpecifier: &envoy_config_core_v3.ConfigSource_ApiConfigSource{
 										ApiConfigSource: &envoy_config_core_v3.ApiConfigSource{
-											ApiType:             envoy_config_core_v3.ApiConfigSource_GRPC,
+											ApiType:             envoy_config_core_v3.ApiConfigSource_DELTA_GRPC,
 											TransportApiVersion: envoy_config_core_v3.ApiVersion_V3,
 											GrpcServices: []*envoy_config_core_v3.GrpcService{{
 												TargetSpecifier: &envoy_config_core_v3.GrpcService_EnvoyGrpc_{
@@ -922,7 +922,7 @@ func TestHTTPConnectionManager(t *testing.T) {
 									ResourceApiVersion: envoy_config_core_v3.ApiVersion_V3,
 									ConfigSourceSpecifier: &envoy_config_core_v3.ConfigSource_ApiConfigSource{
 										ApiConfigSource: &envoy_config_core_v3.ApiConfigSource{
-											ApiType:             envoy_config_core_v3.ApiConfigSource_GRPC,
+											ApiType:             envoy_config_core_v3.ApiConfigSource_DELTA_GRPC,
 											TransportApiVersion: envoy_config_core_v3.ApiVersion_V3,
 											GrpcServices: []*envoy_config_core_v3.GrpcService{{
 												TargetSpecifier: &envoy_config_core_v3.GrpcService_EnvoyGrpc_{
@@ -969,7 +969,7 @@ func TestHTTPConnectionManager(t *testing.T) {
 									ResourceApiVersion: envoy_config_core_v3.ApiVersion_V3,
 									ConfigSourceSpecifier: &envoy_config_core_v3.ConfigSource_ApiConfigSource{
 										ApiConfigSource: &envoy_config_core_v3.ApiConfigSource{
-											ApiType:             envoy_config_core_v3.ApiConfigSource_GRPC,
+											ApiType:             envoy_config_core_v3.ApiConfigSource_DELTA_GRPC,
 											TransportApiVersion: envoy_config_core_v3.ApiVersion_V3,
 											GrpcServices: []*envoy_config_core_v3.GrpcService{{
 												TargetSpecifier: &envoy_config_core_v3.GrpcService_EnvoyGrpc_{
@@ -1017,7 +1017,7 @@ func TestHTTPConnectionManager(t *testing.T) {
 									ResourceApiVersion: envoy_config_core_v3.ApiVersion_V3,
 									ConfigSourceSpecifier: &envoy_config_core_v3.ConfigSource_ApiConfigSource{
 										ApiConfigSource: &envoy_config_core_v3.ApiConfigSource{
-											ApiType:             envoy_config_core_v3.ApiConfigSource_GRPC,
+											ApiType:             envoy_config_core_v3.ApiConfigSource_DELTA_GRPC,
 											TransportApiVersion: envoy_config_core_v3.ApiVersion_V3,
 											GrpcServices: []*envoy_config_core_v3.GrpcService{{
 												TargetSpecifier: &envoy_config_core_v3.GrpcService_EnvoyGrpc_{
@@ -1066,7 +1066,7 @@ func TestHTTPConnectionManager(t *testing.T) {
 									ResourceApiVersion: envoy_config_core_v3.ApiVersion_V3,
 									ConfigSourceSpecifier: &envoy_config_core_v3.ConfigSource_ApiConfigSource{
 										ApiConfigSource: &envoy_config_core_v3.ApiConfigSource{
-											ApiType:             envoy_config_core_v3.ApiConfigSource_GRPC,
+											ApiType:             envoy_config_core_v3.ApiConfigSource_DELTA_GRPC,
 											TransportApiVersion: envoy_config_core_v3.ApiVersion_V3,
 											GrpcServices: []*envoy_config_core_v3.GrpcService{{
 												TargetSpecifier: &envoy_config_core_v3.GrpcService_EnvoyGrpc_{
@@ -1115,7 +1115,7 @@ func TestHTTPConnectionManager(t *testing.T) {
 									ResourceApiVersion: envoy_config_core_v3.ApiVersion_V3,
 									ConfigSourceSpecifier: &envoy_config_core_v3.ConfigSource_ApiConfigSource{
 										ApiConfigSource: &envoy_config_core_v3.ApiConfigSource{
-											ApiType:             envoy_config_core_v3.ApiConfigSource_GRPC,
+											ApiType:             envoy_config_core_v3.ApiConfigSource_DELTA_GRPC,
 											TransportApiVersion: envoy_config_core_v3.ApiVersion_V3,
 											GrpcServices: []*envoy_config_core_v3.GrpcService{{
 												TargetSpecifier: &envoy_config_core_v3.GrpcService_EnvoyGrpc_{
@@ -1162,7 +1162,7 @@ func TestHTTPConnectionManager(t *testing.T) {
 									ResourceApiVersion: envoy_config_core_v3.ApiVersion_V3,
 									ConfigSourceSpecifier: &envoy_config_core_v3.ConfigSource_ApiConfigSource{
 										ApiConfigSource: &envoy_config_core_v3.ApiConfigSource{
-											ApiType:             envoy_config_core_v3.ApiConfigSource_GRPC,
+											ApiType:             envoy_config_core_v3.ApiConfigSource_DELTA_GRPC,
 											TransportApiVersion: envoy_config_core_v3.ApiVersion_V3,
 											GrpcServices: []*envoy_config_core_v3.GrpcService{{
 												TargetSpecifier: &envoy_config_core_v3.GrpcService_EnvoyGrpc_{
@@ -1223,7 +1223,7 @@ func TestHTTPConnectionManager(t *testing.T) {
 									ResourceApiVersion: envoy_config_core_v3.ApiVersion_V3,
 									ConfigSourceSpecifier: &envoy_config_core_v3.ConfigSource_ApiConfigSource{
 										ApiConfigSource: &envoy_config_core_v3.ApiConfigSource{
-											ApiType:             envoy_config_core_v3.ApiConfigSource_GRPC,
+											ApiType:             envoy_config_core_v3.ApiConfigSource_DELTA_GRPC,
 											TransportApiVersion: envoy_config_core_v3.ApiVersion_V3,
 											GrpcServices: []*envoy_config_core_v3.GrpcService{{
 												TargetSpecifier: &envoy_config_core_v3.GrpcService_EnvoyGrpc_{
@@ -1280,7 +1280,7 @@ func TestHTTPConnectionManager(t *testing.T) {
 									ResourceApiVersion: envoy_config_core_v3.ApiVersion_V3,
 									ConfigSourceSpecifier: &envoy_config_core_v3.ConfigSource_ApiConfigSource{
 										ApiConfigSource: &envoy_config_core_v3.ApiConfigSource{
-											ApiType:             envoy_config_core_v3.ApiConfigSource_GRPC,
+											ApiType:             envoy_config_core_v3.ApiConfigSource_DELTA_GRPC,
 											TransportApiVersion: envoy_config_core_v3.ApiVersion_V3,
 											GrpcServices: []*envoy_config_core_v3.GrpcService{{
 												TargetSpecifier: &envoy_config_core_v3.GrpcService_EnvoyGrpc_{
@@ -1327,7 +1327,7 @@ func TestHTTPConnectionManager(t *testing.T) {
 									ResourceApiVersion: envoy_config_core_v3.ApiVersion_V3,
 									ConfigSourceSpecifier: &envoy_config_core_v3.ConfigSource_ApiConfigSource{
 										ApiConfigSource: &envoy_config_core_v3.ApiConfigSource{
-											ApiType:             envoy_config_core_v3.ApiConfigSource_GRPC,
+											ApiType:             envoy_config_core_v3.ApiConfigSource_DELTA_GRPC,
 											TransportApiVersion: envoy_config_core_v3.ApiVersion_V3,
 											GrpcServices: []*envoy_config_core_v3.GrpcService{{
 												TargetSpecifier: &envoy_config_core_v3.GrpcService_EnvoyGrpc_{
@@ -1375,7 +1375,7 @@ func TestHTTPConnectionManager(t *testing.T) {
 									ResourceApiVersion: envoy_config_core_v3.ApiVersion_V3,
 									ConfigSourceSpecifier: &envoy_config_core_v3.ConfigSource_ApiConfigSource{
 										ApiConfigSource: &envoy_config_core_v3.ApiConfigSource{
-											ApiType:             envoy_config_core_v3.ApiConfigSource_GRPC,
+											ApiType:             envoy_config_core_v3.ApiConfigSource_DELTA_GRPC,
 											TransportApiVersion: envoy_config_core_v3.ApiVersion_V3,
 											GrpcServices: []*envoy_config_core_v3.GrpcService{{
 												TargetSpecifier: &envoy_config_core_v3.GrpcService_EnvoyGrpc_{
@@ -1424,7 +1424,7 @@ func TestHTTPConnectionManager(t *testing.T) {
 									ResourceApiVersion: envoy_config_core_v3.ApiVersion_V3,
 									ConfigSourceSpecifier: &envoy_config_core_v3.ConfigSource_ApiConfigSource{
 										ApiConfigSource: &envoy_config_core_v3.ApiConfigSource{
-											ApiType:             envoy_config_core_v3.ApiConfigSource_GRPC,
+											ApiType:             envoy_config_core_v3.ApiConfigSource_DELTA_GRPC,
 											TransportApiVersion: envoy_config_core_v3.ApiVersion_V3,
 											GrpcServices: []*envoy_config_core_v3.GrpcService{{
 												TargetSpecifier: &envoy_config_core_v3.GrpcService_EnvoyGrpc_{

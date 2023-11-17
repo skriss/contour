@@ -130,7 +130,7 @@ func TestBootstrap(t *testing.T) {
   "dynamic_resources": {
     "lds_config": {
       "api_config_source": {
-        "api_type": "GRPC",
+        "api_type": "DELTA_GRPC",
         "transport_api_version": "V3",
         "grpc_services": [
           {
@@ -145,7 +145,7 @@ func TestBootstrap(t *testing.T) {
     },
     "cds_config": {
       "api_config_source": {
-        "api_type": "GRPC",
+        "api_type": "DELTA_GRPC",
         "transport_api_version": "V3",
         "grpc_services": [
           {
@@ -190,7 +190,7 @@ func TestBootstrap(t *testing.T) {
           "name": "dynamic",
           "rtds_config": {
             "api_config_source": {
-              "api_type": "GRPC",
+              "api_type": "DELTA_GRPC",
               "transport_api_version": "V3",
               "grpc_services": [
                 {
@@ -309,7 +309,7 @@ func TestBootstrap(t *testing.T) {
   "dynamic_resources": {
     "lds_config": {
       "api_config_source": {
-        "api_type": "GRPC",
+        "api_type": "DELTA_GRPC",
 		"transport_api_version": "V3",
         "grpc_services": [
           {
@@ -324,7 +324,7 @@ func TestBootstrap(t *testing.T) {
     },
     "cds_config": {
       "api_config_source": {
-        "api_type": "GRPC",
+        "api_type": "DELTA_GRPC",
 		"transport_api_version": "V3",
         "grpc_services": [
           {
@@ -369,7 +369,7 @@ func TestBootstrap(t *testing.T) {
           "name": "dynamic",
           "rtds_config": {
             "api_config_source": {
-              "api_type": "GRPC",
+              "api_type": "DELTA_GRPC",
               "transport_api_version": "V3",
               "grpc_services": [
                 {
@@ -488,7 +488,7 @@ func TestBootstrap(t *testing.T) {
   "dynamic_resources": {
     "lds_config": {
       "api_config_source": {
-        "api_type": "GRPC",
+        "api_type": "DELTA_GRPC",
 		"transport_api_version": "V3",
         "grpc_services": [
           {
@@ -503,7 +503,7 @@ func TestBootstrap(t *testing.T) {
     },
     "cds_config": {
       "api_config_source": {
-        "api_type": "GRPC",
+        "api_type": "DELTA_GRPC",
         "transport_api_version": "V3",
         "grpc_services": [
           {
@@ -548,7 +548,7 @@ func TestBootstrap(t *testing.T) {
           "name": "dynamic",
           "rtds_config": {
             "api_config_source": {
-              "api_type": "GRPC",
+              "api_type": "DELTA_GRPC",
               "transport_api_version": "V3",
               "grpc_services": [
                 {
@@ -668,7 +668,7 @@ func TestBootstrap(t *testing.T) {
   "dynamic_resources": {
     "lds_config": {
       "api_config_source": {
-        "api_type": "GRPC",
+        "api_type": "DELTA_GRPC",
  		"transport_api_version": "V3",
         "grpc_services": [
           {
@@ -683,7 +683,7 @@ func TestBootstrap(t *testing.T) {
     },
     "cds_config": {
       "api_config_source": {
-        "api_type": "GRPC",
+        "api_type": "DELTA_GRPC",
  		"transport_api_version": "V3",
         "grpc_services": [
           {
@@ -728,7 +728,7 @@ func TestBootstrap(t *testing.T) {
           "name": "dynamic",
           "rtds_config": {
             "api_config_source": {
-              "api_type": "GRPC",
+              "api_type": "DELTA_GRPC",
               "transport_api_version": "V3",
               "grpc_services": [
                 {
@@ -848,7 +848,7 @@ func TestBootstrap(t *testing.T) {
   "dynamic_resources": {
     "lds_config": {
       "api_config_source": {
-        "api_type": "GRPC",
+        "api_type": "DELTA_GRPC",
         "transport_api_version": "V3",
         "grpc_services": [
           {
@@ -863,7 +863,7 @@ func TestBootstrap(t *testing.T) {
     },
     "cds_config": {
       "api_config_source": {
-        "api_type": "GRPC",
+        "api_type": "DELTA_GRPC",
         "transport_api_version": "V3",
         "grpc_services": [
           {
@@ -908,7 +908,7 @@ func TestBootstrap(t *testing.T) {
           "name": "dynamic",
           "rtds_config": {
             "api_config_source": {
-              "api_type": "GRPC",
+              "api_type": "DELTA_GRPC",
               "transport_api_version": "V3",
               "grpc_services": [
                 {
@@ -1028,7 +1028,7 @@ func TestBootstrap(t *testing.T) {
   "dynamic_resources": {
     "lds_config": {
       "api_config_source": {
-        "api_type": "GRPC",
+        "api_type": "DELTA_GRPC",
         "transport_api_version": "V3",
         "grpc_services": [
           {
@@ -1043,7 +1043,7 @@ func TestBootstrap(t *testing.T) {
     },
     "cds_config": {
       "api_config_source": {
-        "api_type": "GRPC",
+        "api_type": "DELTA_GRPC",
         "transport_api_version": "V3",
         "grpc_services": [
           {
@@ -1088,7 +1088,7 @@ func TestBootstrap(t *testing.T) {
           "name": "dynamic",
           "rtds_config": {
             "api_config_source": {
-              "api_type": "GRPC",
+              "api_type": "DELTA_GRPC",
               "transport_api_version": "V3",
               "grpc_services": [
                 {
@@ -1210,7 +1210,7 @@ func TestBootstrap(t *testing.T) {
   "dynamic_resources": {
     "lds_config": {
       "api_config_source": {
-        "api_type": "GRPC",
+        "api_type": "DELTA_GRPC",
         "transport_api_version": "V3",
         "grpc_services": [
           {
@@ -1225,7 +1225,7 @@ func TestBootstrap(t *testing.T) {
     },
     "cds_config": {
       "api_config_source": {
-        "api_type": "GRPC",
+        "api_type": "DELTA_GRPC",
         "transport_api_version": "V3",
         "grpc_services": [
           {
@@ -1270,7 +1270,7 @@ func TestBootstrap(t *testing.T) {
           "name": "dynamic",
           "rtds_config": {
             "api_config_source": {
-              "api_type": "GRPC",
+              "api_type": "DELTA_GRPC",
               "transport_api_version": "V3",
               "grpc_services": [
                 {
@@ -1426,7 +1426,7 @@ func TestBootstrap(t *testing.T) {
   "dynamic_resources": {
     "lds_config": {
       "api_config_source": {
-        "api_type": "GRPC",
+        "api_type": "DELTA_GRPC",
         "transport_api_version": "V3",
         "grpc_services": [
           {
@@ -1441,7 +1441,7 @@ func TestBootstrap(t *testing.T) {
     },
     "cds_config": {
       "api_config_source": {
-        "api_type": "GRPC",
+        "api_type": "DELTA_GRPC",
         "transport_api_version": "V3",
         "grpc_services": [
           {
@@ -1486,7 +1486,7 @@ func TestBootstrap(t *testing.T) {
           "name": "dynamic",
           "rtds_config": {
             "api_config_source": {
-              "api_type": "GRPC",
+              "api_type": "DELTA_GRPC",
               "transport_api_version": "V3",
               "grpc_services": [
                 {
@@ -1640,7 +1640,7 @@ func TestBootstrap(t *testing.T) {
         "dynamic_resources": {
           "lds_config": {
             "api_config_source": {
-              "api_type": "GRPC",
+              "api_type": "DELTA_GRPC",
               "transport_api_version": "V3",
               "grpc_services": [
                 {
@@ -1655,7 +1655,7 @@ func TestBootstrap(t *testing.T) {
           },
           "cds_config": {
             "api_config_source": {
-              "api_type": "GRPC",
+              "api_type": "DELTA_GRPC",
               "transport_api_version": "V3",
               "grpc_services": [
                 {
@@ -1700,7 +1700,7 @@ func TestBootstrap(t *testing.T) {
                 "name": "dynamic",
                 "rtds_config": {
                   "api_config_source": {
-                    "api_type": "GRPC",
+                    "api_type": "DELTA_GRPC",
                     "transport_api_version": "V3",
                     "grpc_services": [
                       {
@@ -1872,7 +1872,7 @@ func TestBootstrap(t *testing.T) {
         "dynamic_resources": {
           "lds_config": {
             "api_config_source": {
-              "api_type": "GRPC",
+              "api_type": "DELTA_GRPC",
               "transport_api_version": "V3",
               "grpc_services": [
                 {
@@ -1887,7 +1887,7 @@ func TestBootstrap(t *testing.T) {
           },
           "cds_config": {
             "api_config_source": {
-              "api_type": "GRPC",
+              "api_type": "DELTA_GRPC",
               "transport_api_version": "V3",
               "grpc_services": [
                 {
@@ -1909,7 +1909,7 @@ func TestBootstrap(t *testing.T) {
                 "name": "dynamic",
                 "rtds_config": {
                   "api_config_source": {
-                    "api_type": "GRPC",
+                    "api_type": "DELTA_GRPC",
                     "transport_api_version": "V3",
                     "grpc_services": [
                       {
